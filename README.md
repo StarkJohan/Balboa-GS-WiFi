@@ -1,6 +1,7 @@
 # Balboa-GS-WiFi
 
-<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/docs/panel_ns.jpg" width="400"> <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/docs/panel_vl406u.jpg" width="400">
+<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/docs/panel_ns.jpg" width="350">
+<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/docs/panel_vl406u.jpg" width="350">
 
 ## Software
 
