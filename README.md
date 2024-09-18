@@ -22,11 +22,7 @@ The PCB has solder jumpers that can be set the pinout to be compatible with eith
 - VL600S, VL700S, VL701S, VL702S
 
 ## Hardware
-<table>
-<tr><td>
 ### Pinouts
-</td></tr>
-<tr><td>
 #### Z suffix, 4 button control displays
 <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/RJ45.jpg" width="200">
 
@@ -40,8 +36,6 @@ The PCB has solder jumpers that can be set the pinout to be compatible with eith
 | PIN 6         | Clock                   |
 | PIN 7         | Button: Pump / Jets     |  
 | PIN 8         | Button: Down / Cool     |
-</td>
-
 
 
 
