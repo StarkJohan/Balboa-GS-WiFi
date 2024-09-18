@@ -51,11 +51,13 @@ For example if the display shows **36** as in the image below, the second and th
 
 | Chunk 1 - bit(0-6) | Chunk 2 - bit(7-13) | Chunk 3 - bit(14-20) | Chunk 4 - bit(21-23) | 
 | ------------------ | ------------------- | ------------------   | -------------------- |                   
-|                    |  LCD segment 1      |   LCD Segment 2      |   21: Pump 1 ON      |                    
-|                    |                     |                      |   22: Lights ON      |        
-|                    |                     |                      |   23:                | 
-|                    |                     |                      |                      | 
-|  Heater ON         |                     |                      |                      | 
+|  ?                 |  LCD segment 1      |   LCD Segment 2      |   21: Pump 1 ON     |                    
+|  ?                 |                     |                      |   22: Lights ON     |        
+|  ?                 |                     |                      |   23: Pump 2?       | 
+|  ?                 |                     |                      |                     | 
+|  Heater ON         |                     |                      |                     | 
+|  ?                 |                     |                      |                     | 
+|  ?                 |                     |                      |                     | 
 
 <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/scope_data.png">
 
