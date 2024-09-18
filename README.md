@@ -4,11 +4,11 @@
 
 
 ## What's this?
-This repo aims to provide a general hardware solution to add WiFi control to the Balbo GS line of SPA controllers using the 8-pin RJ45 connected displays.<br>
-The PCB is designed to be installed directly on the RJ45 port of the controller PCB. Remote install using a RJ45 cable is also possible if that is preferred.<br>
-The software will be heavily based on user contribution as the different controller displays have slightly different 7 segment displays and button functions.<br>
+This repo aims to provide a general hardware solution to add WiFi control to the Balbo GS line of SPA controllers using the 8-pin RJ45 connected displays.<br />
+The PCB is designed to be installed directly on the RJ45 port of the controller PCB. Remote install using a RJ45 cable is also possible if that is preferred.<br />
+The software will be heavily based on user contribution as the different controller displays have slightly different 7 segment displays and button functions.<br />
 Please note that the only hardware I personally have access to is the VL406U 4 button control panel and the GS500Z/GS501Z controller.
-The POC software framework is based on <a href="https://github.com/MagnusPer/Balboa-GS510SZ">this excellent repo by MagnusPer</a>. For more detailed information on the protocol please visit his repo.<br>
+The POC software framework is based on <a href="https://github.com/MagnusPer/Balboa-GS510SZ">this excellent repo by MagnusPer</a>. For more detailed information on the protocol please visit his repo.<br />
 
 ### Current state and support
 The PCB is currently in a protoype stage. It is tested and confirmed to support the following controllers:
@@ -40,11 +40,11 @@ It's very likely that the PCB can be used with the VL801D and VL802D control dis
 | PIN 8         | Button: Down / Cool     |
 
 ### Display data
-The display signal is made up of a clock and a data line. The complete set is made up of three 7 bit chunks and one 3 bit suffix.<br>
-The first chunk is mostly unused except for the fith bit that indicates "heater on".<br>
+The display signal is made up of a clock and a data line. The complete set is made up of three 7 bit chunks and one 3 bit suffix.<br />
+The first chunk is mostly unused except for the fith bit that indicates "heater on".<br />
 The second and third chunk represents the two digits of the seven segment display. 
 
-For example if the display shows **36** as in the oscilloscope image below, the second and third chunks are coded in BCD to 7 segment LCD. The first bit is always 0. <br />
+For example if the display shows **36** as in the oscilloscope image below, the second and third chunks are coded in BCD to 7 segment LCD. The first bit is always 0. <br /><br />
 3 = (0)1111001 = 0x79  (Chunk 2) <br />
 6 = (0)1011111 = 0x5F  (Chunk 3) <br />
 
@@ -55,7 +55,7 @@ For example if the display shows **36** as in the oscilloscope image below, the 
 | ?                 |                    |                     |   22: Lights          |        
 | ?                 |                    |                     |   23: Pump 2, Blower? | 
 | ?                 |                    |                     |                       | 
-| Heater            |                    |                     |                       | 
+| 4: Heater         |                    |                     |                       | 
 | ?                 |                    |                     |                       | 
 | ?                 |                    |                     |                       | 
 
