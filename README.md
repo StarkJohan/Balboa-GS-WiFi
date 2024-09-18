@@ -29,7 +29,7 @@ It's very likely that the PCB can be used with the VL801D and VL802D control dis
 ## Hardware
 ### Control display data and pin functions
 #### Z suffix, 4 button control displays
-<table width="100%">
+<table width="500px">
   <tr>
     <th colspan="2">Z suffix</th>
     <th colspan="2">SZ/D suffix</th>
