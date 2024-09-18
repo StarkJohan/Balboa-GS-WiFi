@@ -7,17 +7,24 @@
 This repo aims to provide a general hardware solution to add WiFi control to the Balbo GS line of SPA controllers using the 8-pin RJ45 connected displays.<br>
 The PCB is designed to be installed directly on the RJ45 port of the controller PCB. Remote install using a RJ45 cable is also possible if that is preferred.<br>
 The software will be heavily based on user contribution as the different controller displays have slightly different 7 segment displays and button functions.<br>
-The POC software framework is based on <a href="https://github.com/MagnusPer/Balboa-GS510SZ">this excellent repo by MagnusPer</a>.
+Please note that the only hardware I personally have access to is the VL406U 4 button control panel and the GS500Z/GS501Z controller.
+The POC software framework is based on <a href="https://github.com/MagnusPer/Balboa-GS510SZ">this excellent repo by MagnusPer</a>.<br>
 
 ### Current state and support
 The PCB is currently in a protoype stage. It is tested and confirmed to support the following controllers:
 - GS500Z
 - GS501Z
 
-### version 0.1 
-- Basic functionality to read and set status using a **Balboa_GS** developed library. Two examples are provided, first with simple read and set functionality and the second using MQTT for remote access.
+The PCB should thus be compatible with the following control displays:
+- VL200, VL240, VL260, VL400, VL401, VL402, VL403, VL404, VL406T, VL406U (these are compatible with the Z suffix main controllers)
 
-## RJ45 pins
+The PCB has solder jumpers that can be set the pinout to be compatible with either the pinout of the panels above (named 4 button displays below, Z suffic controlelrs) or the SZ controllers using the following displays:
+- VL600S, VL700S, VL701S, VL702S
+
+## Hardware
+
+### Pinouts
+## Z suffix, 4 button control displays
 <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/RJ45.jpg" width="200">
 
 | PIN           | Description             | 
@@ -30,6 +37,14 @@ The PCB is currently in a protoype stage. It is tested and confirmed to support 
 | PIN 6         | Clock                   |
 | PIN 7         | Button: Pump / Jets     |  
 | PIN 8         | Button: Down / Cool     |
+
+
+
+
+### version 0.1 
+- Basic functionality to read and set status using a **Balboa_GS** developed library. Two examples are provided, first with simple read and set functionality and the second using MQTT for remote access.
+
+
 
 ## Measurements 
 
