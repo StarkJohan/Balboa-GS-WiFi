@@ -54,7 +54,7 @@ The second and third chunk represents the two digits of the seven segment displa
 The second and third chunks are coded in BCD to represent a 7 segment LCD layout. The first bit is always 0. <br /><br />
 If the display shows **36**: <br />
 3 = (0)1111001 = 0x79  (Chunk 2) <br />
-6 = (0)1011111 = 0x5F  (Chunk 3) <br />
+6 = (0)1011111 = 0x5F  (Chunk 3) <br /><br />
 36 is also the temperature set on the example oscilloscope image below where yellow is the clock and blue is the encoded data.<br /><br />
 
 
