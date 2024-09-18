@@ -56,8 +56,6 @@ For example if the display shows **36** as in the image below, the second and th
 |                    |                     |                      |   23:                | 
 |                    |                     |                      |                      | 
 |  Heater ON         |                     |                      |                      | 
-|                    |                     |                      |                      | 
-|                    |                     |                      |                      | 
 
 <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/scope_data.png">
 
