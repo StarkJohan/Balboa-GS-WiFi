@@ -75,7 +75,7 @@ If the display shows **36**:
 The PCB is connected in paralell to the existing controller display. A bidirectional levelshifter is connected to clock, data, and button lines to allow for reading the button inputs as well as sending pulses on any line. As all button data is indicated with a high pulse in some shape or form, both Z and SZ compatible displays should work with this setup. <br />
 To accommodate for the difference in pinout between Z and SZ controllers the PCB has three solder jumpers. Their default state is not connected which means a selection needs to be made before the PCB will accept power from the RJ45 connector. <br />
 
-<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/jumpers.png" width="200">
+<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/jumpers.png" width="200"> <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/levelshifter.png" width="200">
 
 ## Software
 ### Version 0.1 
