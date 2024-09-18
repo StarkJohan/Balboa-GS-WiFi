@@ -28,9 +28,19 @@ It's very likely that the PCB can be used with the VL801D and VL802D control dis
 
 ## Hardware
 ### Control display data and pin functions
-<p align="center"><span>
 #### Z suffix, 4 button control displays
-
+<p align="center"><span>
+| PIN           | Description             | 
+| ------------- | ------------------------|
+| PIN 1         | 5 VDC                   |
+| PIN 2         | Button: Up / Warm       |
+| PIN 3         | Button: Light           |  
+| PIN 4         | GND                     |
+| PIN 5         | Display data            | 
+| PIN 6         | Clock                   |
+| PIN 7         | Button: Pump / Jets     |  
+| PIN 8         | Button: Down / Cool     |
+</span><span>
 | PIN           | Description             | 
 | ------------- | ------------------------|
 | PIN 1         | 5 VDC                   |
