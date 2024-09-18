@@ -30,7 +30,7 @@ It's very likely that the PCB can be used with the VL801D and VL802D control dis
 ### Control display data and pin functions
 #### Z suffix, 4 button control displays
 <table width="500px">
-  <tr>
+  <tr width="500px">
     <th colspan="2">Z suffix</th>
     <th colspan="2">SZ/D suffix</th>
   </tr>
