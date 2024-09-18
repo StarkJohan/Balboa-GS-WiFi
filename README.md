@@ -26,7 +26,6 @@ It's very likely that the PCB can be used with the VL801D and VL802D control dis
 ## Hardware
 ### Control display data and pin functions
 #### Z suffix, 4 button control displays
-<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/RJ45.jpg" width="200">
 
 | PIN           | Description             | 
 | ------------- | ------------------------|
@@ -38,6 +37,10 @@ It's very likely that the PCB can be used with the VL801D and VL802D control dis
 | PIN 6         | Clock                   |
 | PIN 7         | Button: Pump / Jets     |  
 | PIN 8         | Button: Down / Cool     |
+
+<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/RJ45.jpg" width="200">
+
+For more info on the SZ suffix controller pinout and data format, see the <a href="https://github.com/MagnusPer/Balboa-GS510SZ">MagnusPer</a> repo.
 
 ### Button data
 The four buttons of the Z suffix displays are indicated by a short high pulse on the respective pins as noted in the table.
