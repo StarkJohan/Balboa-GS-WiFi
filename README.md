@@ -83,8 +83,7 @@ To accommodate for the difference in pinout between Z and SZ controllers the PCB
 - The male RJ45 connector soldered to the PCB fits very loosely in the female connector of the main controller board. The PCB has a small rectangular opening in which a small plastic pin can be inserted to friction fit the PCB in place. If this pin is the correct size, the mounting will be very reliable.
 - As an alternative to the above install position an RJ45 cable can be used to connect the PCB.<br /><br />
 
-<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/pcb_example.jpg" width="300">
-<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/pcb_installed.jpg" width="300">
+<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/pcb_example.jpg" width="300"><img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/pcb_installed.jpg" width="300">
 
 ## Software
 ### Version 0.1 
