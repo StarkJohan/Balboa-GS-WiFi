@@ -83,19 +83,6 @@ It's very likely that the PCB can be used with the VL801D and VL802D control dis
   </tr>
 </table>
 
-| PIN           | Description             | 
-| ------------- | ------------------------|
-| PIN 1         | 5 VDC                   |
-| PIN 2         | Button: Up / Warm       |
-| PIN 3         | Button: Light           |  
-| PIN 4         | GND                     |
-| PIN 5         | Display data            | 
-| PIN 6         | Clock                   |
-| PIN 7         | Button: Pump / Jets     |  
-| PIN 8         | Button: Down / Cool     |
-
-
-</p>
 <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/RJ45.jpg" width="200">
 
 For more info on the SZ suffix controller pinout and data format, see the <a href="https://github.com/MagnusPer/Balboa-GS510SZ">MagnusPer</a> repo and for D suffix controllers the <a href="https://github.com/Shuraxxx/-Balboa-GS523DZ-with-panel-VL801D-DeluxeSerie--MQTT">Shuraxxx</a> repo.
