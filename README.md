@@ -46,7 +46,7 @@ For more info on the SZ suffix controller pinout and data format, see the <a hre
 The four buttons of the Z suffix displays are indicated by a short high pulse on the respective pins as noted in the table.
 
 ### Display data
-The display signal is made up of a clock and a data line. The complete data set is made up of three 7 bit chunks and one 3 bit chunk.<br />
+The display signal is made up of a clock  and a data line. The complete data set is made up of three 7 bit chunks and one 3 bit chunk.<br />
 The first chunk is mostly unused except for the fifth bit that indicates if the heater is active.<br />
 The second and third chunk represents the two digits of the seven segment display. 
 
@@ -54,7 +54,7 @@ The second and third chunks are coded in BCD to represent a 7 segment LCD layout
 If the display shows **36**:
 3 = (0)1111001 = 0x79  (Chunk 2) <br />
 6 = (0)1011111 = 0x5F  (Chunk 3) <br />
-36 is also the temperature set on the example oscilloscope image below. 
+36 is also the temperature set on the example oscilloscope image below where yellow is the clock and blue is the encoded data.<br /><br />
 
 
 | Chunk 1 - bit 0-6 | Chunk 2 - bit 7-13 | Chunk 3 - bit 14-20 | Chunk 4 - bit 21-23   | 
