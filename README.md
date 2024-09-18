@@ -5,8 +5,9 @@
 ## What is this?
 
 ### General information
-This repo aims to provide a general hardware solution to add WiFi control to the Balbo GS line of SPA controllers using the 8-pin RJ45 connected displays.
-The PCB is designed to be installed directly on the RJ45 port of the controller PCB. Remote install using a RJ45 cable is also possible if that is preferred. The software will be heavily based on user contribution as the different controller displays have slightly different 7 segment displays and button functions.<br>
+This repo aims to provide a general hardware solution to add WiFi control to the Balbo GS line of SPA controllers using the 8-pin RJ45 connected displays.<br>
+The PCB is designed to be installed directly on the RJ45 port of the controller PCB. Remote install using a RJ45 cable is also possible if that is preferred.<br>
+The software will be heavily based on user contribution as the different controller displays have slightly different 7 segment displays and button functions.<br>
 The POC software framework is based on <a href="https://github.com/MagnusPer/Balboa-GS510SZ">this excellent repo by MagnusPer</a>.
 
 ### Current state and support
