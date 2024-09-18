@@ -35,10 +35,10 @@ It's very likely that the PCB can be used with the VL801D and VL802D control dis
     <th colspan="2">SZ/D suffix, 6+ button control displays</th>
   </tr>
   <tr>
-    <td>Pin 1</td>
-    <td>5 VDC</td>
-    <td>Pin 1</td>
-    <td>?</td>
+    <td align="center">Pin 1</td>
+    <td align="center">5 VDC</td>
+    <td align="center">Pin 1</td>
+    <td align="center">?</td>
   </tr>
   <tr>
     <td>Pin 2</td>
