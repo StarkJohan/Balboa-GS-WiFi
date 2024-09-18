@@ -1,6 +1,6 @@
 # Balboa-GS-WiFi
 
-<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/docs/panel_ns.jpg" width="350"><img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/docs/panel_vl406u.jpg" width="350">
+<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/panel_ns.jpg" width="350"><img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/panel_vl406u.jpg" width="350">
 
 ## Software
 
@@ -8,7 +8,7 @@
 - Basic functionality to read and set status using a **Balboa_GS** developed library. Two examples are provided, first with simple read and set functionality and the second using MQTT for remote access.
 
 ## RJ45 pins
-<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/docs/RJ45.jpg" width="200">
+<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/RJ45.jpg" width="200">
 
 | PIN           | Description             | 
 | ------------- | ------------------------|
