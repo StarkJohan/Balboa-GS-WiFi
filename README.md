@@ -44,13 +44,13 @@ The display signal is made up of a clock and a data line. The complete set is ma
 The first chunk is mostly unused except for the fith bit that indicates "heater on".<br>
 The second and third chunk represents the two digits of the seven segment display. 
 
-For example if the display shows **36** as in the image below, the second and third chunks are coded in BCD to 7 segment LCD (see reference) but only with 7 bits sinse the LSB always is (0). <br />
+For example if the display shows **36** as in the oscilloscope image below, the second and third chunks are coded in BCD to 7 segment LCD. The first bit is always 0. <br />
 3 = (0)1111001 = 0x79  (Chunk 2) <br />
 6 = (0)1011111 = 0x5F  (Chunk 3) <br />
 
 
-| Chunk 1 - bit(0-6) | Chunk 2 - bit(7-13) | Chunk 3 - bit(14-20) | Chunk 4 - bit(21-23) | 
-| ------------------ | ------------------- | ------------------   | -------------------- |                   
+| Chunk 1 - bit 0-6  | Chunk 2 - bit 7-13  | Chunk 3 - bit 14-20  | Chunk 4 - bit 21-23 | 
+| ------------------ | ------------------- | -------------------  | ------------------- |                   
 |  ?                 |  LCD segment 1      |   LCD Segment 2      |   21: Pump 1 ON     |                    
 |  ?                 |                     |                      |   22: Lights ON     |        
 |  ?                 |                     |                      |   23: Pump 2?       | 
@@ -131,10 +131,11 @@ Since the display and controler unit hardware design is unknown an OR-gate is us
 
 Gerber files located here: [PCB Balboa-GS510SZ](https://github.com/MagnusPer/Balboa-GS510SZ/tree/main/extras/PCB%20layout )
 
-## References of great help!
+## References
+- https://github.com/MagnusPer/Balboa-GS510SZ
 - https://github.com/NickB1/OpenSpa/blob/master/documents/Balboa/Balboa_Display_Measurements.pdf
 - https://www.olivierhill.ca/archives/72-The-Internet-of-Spas.html
-- https://create.arduino.cc/projecthub/meljr/7-segment-led-displays-102-using-a-shift-register-6b6976
+- https://www.electronics-tutorials.ws/combination/comb_6.html
 
 ## Other Balboa projects 
 - GL2000 Series https://github.com/netmindz/balboa_GL_ML_spa_control
