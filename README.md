@@ -2,7 +2,16 @@
 
 <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/panel_ns.jpg" width="350"><img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/panel_vl406u.jpg" width="350">
 
-## Software
+## What is this?
+
+### General information
+This repo aims to provide a general hardware solution to add WiFi control to the Balbo GS line of SPA controllers using the 8-pin RJ45 connected displays. The PCB is designed to be installed directly on the RJ45 port of the controller PCB. Remote install using a RJ45 cable is also possible if that is preferred. The software will be heavily based on user contribution as the different controller displays have slightly different 7 segment displays and button functions. 
+The POC software framework is based on <a href="https://github.com/MagnusPer/Balboa-GS510SZ">this excellent repo by MagnusPer</a>.
+
+### Current state and support
+The PCB is currently in a protoype stage. It is tested and confirmed to support the following controllers:
+- GS500Z
+- GS501Z
 
 ### version 0.1 
 - Basic functionality to read and set status using a **Balboa_GS** developed library. Two examples are provided, first with simple read and set functionality and the second using MQTT for remote access.
