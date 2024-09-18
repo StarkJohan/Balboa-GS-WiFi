@@ -22,24 +22,24 @@ class BalboaInterface {
 	void begin();						           	// Initializes the stream output to Serial by default
     bool loop();                                    // Returns true if valid data is available
     void stop(); 
-	//void checkInputs(byte lightPin);                                 // Disables the clock hardware interrupt 
+	//void checkInputs(byte lightPin);              // Disables the clock hardware interrupt 
     void resetStatus();                             // Resets the state of all status components as changed for sketches to get the current status	
 	void updateTemperature(int Temperature);		// Function to set the water temperature 	
 
 	// Status tracking
 	int waterTemperature;                			// Water temperatur 
-	int setTemperature;                			// The wanted set temperature   
+	int setTemperature;                			    // The wanted set temperature   
 	String LCD_display;								// The text shown on display 
 	bool setTempActive;        						// Temp up/down button pressed
 	bool displayBit23;        						// Still unknown functionality, if at all used!
-	//bool displayBit30;        						// Still unknown functionality, if at all used!
+	//bool displayBit30;        					// Still unknown functionality, if at all used!
 	//bool displayStandardMode;        				// Standard Mode activated or not
-	//bool displayBit32;        						// Still unknown functionality, if at all used!
-	//bool displayBit33;        						// Still unknown functionality, if at all used!  
-	//bool displayBit34;        						// Still unknown functionality, if at all used!
+	//bool displayBit32;        					// Still unknown functionality, if at all used!
+	//bool displayBit33;        					// Still unknown functionality, if at all used!  
+	//bool displayBit34;        					// Still unknown functionality, if at all used!
 	bool displayHeater;        						// Heater running or not
 	bool displayPump1;        						// Pump 1 running or not 
-	//bool displayPump2;        						// Pump 2 running or not
+	//bool displayPump2;        					// Pump 2 running or not
 	bool displayLight;        						// Hot tube lights activated or not
 	static bool displayDataBufferOverflow;
 	
@@ -68,9 +68,9 @@ class BalboaInterface {
 	//String LCD_display_4;  
 	static byte displayDataBuffer[totalDataBits]; 	// Array of display data measurements 
 	static unsigned long clockInterruptTime;
-	static int clockBitCounter;               		 		// Counter of pulses within a cycle
+	static int clockBitCounter;               		// Counter of pulses within a cycle
 	static byte dataIndex; 									
-	static bool displayDataBufferReady;            			// Is buffer available to be decoded
+	static bool displayDataBufferReady;            	// Is buffer available to be decoded
 	static byte clockPin;
     static byte displayPin;
 	static byte lightPin;
