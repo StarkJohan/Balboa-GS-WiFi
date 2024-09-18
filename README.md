@@ -1,6 +1,7 @@
 # Balboa GS WiFi Controller
 
-<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/panel_ns.jpg" width="350"><img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/panel_vl406u.jpg" width="350">
+<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/balboa_gs_unit.jpg" width="450">
+<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/panel_ns.jpg" width="300"><img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/panel_vl406u.jpg" width="300">
 
 
 ## What's this?
