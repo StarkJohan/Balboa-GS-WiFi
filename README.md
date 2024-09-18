@@ -22,7 +22,7 @@ The PCB has solder jumpers that can be set the pinout to be compatible with eith
 - VL600S, VL700S, VL701S, VL702S
 
 ## Hardware
-### Pinouts
+### Pinout
 #### Z suffix, 4 button control displays
 <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/RJ45.jpg" width="200">
 
@@ -37,7 +37,8 @@ The PCB has solder jumpers that can be set the pinout to be compatible with eith
 | PIN 7         | Button: Pump / Jets     |  
 | PIN 8         | Button: Down / Cool     |
 
-
+### Display data
+<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/scope_data.png" width="400">
 
 ### version 0.1 
 - Basic functionality to read and set status using a **Balboa_GS** developed library. Two examples are provided, first with simple read and set functionality and the second using MQTT for remote access.
