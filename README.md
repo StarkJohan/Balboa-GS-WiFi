@@ -50,7 +50,7 @@ It's very likely that the PCB can be used with the VL801D and VL802D control dis
     <td>Pin 3</td>
     <td>Light button</td>
     <td>Pin 3</td>
-    <td>Button data</td>
+    <td>Button data line</td>
   </tr>
   <tr>
     <td>Pin 4</td>
@@ -60,15 +60,15 @@ It's very likely that the PCB can be used with the VL801D and VL802D control dis
   </tr>
   <tr>
     <td>Pin 5</td>
-    <td>Display data</td>
+    <td>Display data line</td>
     <td>Pin 5</td>
-    <td>Display data</td>
+    <td>Display data line</td>
   </tr>
   <tr>
     <td>Pin 6</td>
-    <td>Clock</td>
+    <td>Clock line</td>
     <td>Pin 6</td>
-    <td>Clock</td>
+    <td>Clock line</td>
   </tr>
   <tr>
     <td>Pin 7</td>
