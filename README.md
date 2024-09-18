@@ -5,7 +5,7 @@
 
 
 ## What's this?
-This repo aims to provide a general hardware solution to add WiFi control to the Balbo GS line of SPA controllers using the 8-pin RJ45 connected displays.<br />
+This repo aims to provide a general **hardware** solution to add WiFi control to the Balbo GS line of SPA controllers using the 8-pin RJ45 connected displays.<br />
 The PCB is designed to be installed directly on the RJ45 port of the controller PCB. Remote install using a RJ45 cable is also possible if that is preferred.<br />
 The software will be heavily based on user contribution as the different controller displays have slightly different 7 segment displays and button functions.<br />
 Please note that the only hardware I personally have access to is the VL406U 4 button control panel and the GS500Z/GS501Z controller.
