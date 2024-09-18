@@ -21,7 +21,7 @@ The PCB should thus be compatible with the following control displays (Z suffix 
 The PCB has solder jumpers that can be set the pinout to be compatible with either the pinout of the panels above or the SZ suffix controllers using the following displays:
 - VL600S, VL700S, VL701S, VL702S
 
-It's very likely that the PCB can be used with the VL801D and VL802D control displays as well but this is currently untested.
+It's very likely that the PCB can be used with the VL801D and VL802D control displays as well.
 
 ## Hardware
 ### Control display data and pin functions
@@ -40,7 +40,7 @@ It's very likely that the PCB can be used with the VL801D and VL802D control dis
 
 <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/RJ45.jpg" width="200">
 
-For more info on the SZ suffix controller pinout and data format, see the <a href="https://github.com/MagnusPer/Balboa-GS510SZ">MagnusPer</a> repo.
+For more info on the SZ suffix controller pinout and data format, see the <a href="https://github.com/MagnusPer/Balboa-GS510SZ">MagnusPer</a> repo and for D suffix controllers the <a href="https://github.com/Shuraxxx/-Balboa-GS523DZ-with-panel-VL801D-DeluxeSerie--MQTT">Shuraxxx</a> repo.
 
 ### Button data
 The four buttons of the Z suffix displays are indicated by a short high pulse on the respective pins as noted in the table.
