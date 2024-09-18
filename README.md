@@ -29,16 +29,10 @@ It's very likely that the PCB can be used with the VL801D and VL802D control dis
 ## Hardware
 ### Control display data and pin functions
 #### Z suffix, 4 button control displays
-<table align="center" width="500px">
+<table align="center">
   <tr>
     <th colspan="2">Z suffix</th>
     <th colspan="2">SZ/D suffix</th>
-  </tr>
-  <tr>
-    <td>PIN</td>
-    <td>Description</td>
-    <td>PIN</td>
-    <td>Description</td>
   </tr>
   <tr>
     <td>Pin 1</td>
@@ -48,8 +42,44 @@ It's very likely that the PCB can be used with the VL801D and VL802D control dis
   </tr>
   <tr>
     <td>Pin 2</td>
-    <td>Button: Up / Warm </td>
+    <td>Up / Warm button</td>
     <td>Pin 2</td>
+    <td>?</td>
+  </tr>
+  <tr>
+    <td>Pin 3</td>
+    <td>Light button</td>
+    <td>Pin 3</td>
+    <td>Button data</td>
+  </tr>
+  <tr>
+    <td>Pin 4</td>
+    <td>GND</td>
+    <td>Pin 4</td>
+    <td>GND</td>
+  </tr>
+  <tr>
+    <td>Pin 5</td>
+    <td>Display data</td>
+    <td>Pin 5</td>
+    <td>Display data</td>
+  </tr>
+  <tr>
+    <td>Pin 6</td>
+    <td>Clock</td>
+    <td>Pin 6</td>
+    <td>Clock</td>
+  </tr>
+  <tr>
+    <td>Pin 7</td>
+    <td>Pump / Jets button</td>
+    <td>Pin 7</td>
+    <td>5 VDC</td>
+  </tr>
+  <tr>
+    <td>Pin 8</td>
+    <td>Down / Cool button</td>
+    <td>Pin 8</td>
     <td>?</td>
   </tr>
 </table>
