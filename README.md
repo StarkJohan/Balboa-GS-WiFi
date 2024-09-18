@@ -30,9 +30,28 @@ It's very likely that the PCB can be used with the VL801D and VL802D control dis
 ### Control display data and pin functions
 #### Z suffix, 4 button control displays
 <table>
-    <tr>
-        <td>Foo</td>
-    </tr>
+  <tr>
+    <th colspan="2">Z suffix</th>
+    <th colspan="2">SZ/D suffix</th>
+  </tr>
+  <tr>
+    <td>PIN</td>
+    <td>Description</td>
+    <td>PIN</td>
+    <td>Description</td>
+  </tr>
+  <tr>
+    <td>Pin 1</td>
+    <td>5 VDC</td>
+    <td>Pin 1</td>
+    <td>?</td>
+  </tr>
+  <tr>
+    <td>Pin 2</td>
+    <td>Button: Up / Warm </td>
+    <td>Pin 2</td>
+    <td>?</td>
+  </tr>
 </table>
 
 | PIN           | Description             | 
@@ -46,16 +65,6 @@ It's very likely that the PCB can be used with the VL801D and VL802D control dis
 | PIN 7         | Button: Pump / Jets     |  
 | PIN 8         | Button: Down / Cool     |
 
-| PIN           | Description             | 
-| ------------- | ------------------------|
-| PIN 1         | 5 VDC                   |
-| PIN 2         | Button: Up / Warm       |
-| PIN 3         | Button: Light           |  
-| PIN 4         | GND                     |
-| PIN 5         | Display data            | 
-| PIN 6         | Clock                   |
-| PIN 7         | Button: Pump / Jets     |  
-| PIN 8         | Button: Down / Cool     |
 
 </p>
 <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/RJ45.jpg" width="200">
