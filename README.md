@@ -1,10 +1,9 @@
-# Balboa-GS-WiFi
+# Balboa GS WiFi Controller
 
 <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/panel_ns.jpg" width="350"><img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/panel_vl406u.jpg" width="350">
 
-## What is this?
 
-### General information
+## What's this?
 This repo aims to provide a general hardware solution to add WiFi control to the Balbo GS line of SPA controllers using the 8-pin RJ45 connected displays.<br>
 The PCB is designed to be installed directly on the RJ45 port of the controller PCB. Remote install using a RJ45 cable is also possible if that is preferred.<br>
 The software will be heavily based on user contribution as the different controller displays have slightly different 7 segment displays and button functions.<br>
