@@ -24,7 +24,7 @@ The PCB has solder jumpers that can be set the pinout to be compatible with eith
 It's very likely that the PCB can be used with the VL801D and VL802D control displays as well but this is currently untested.
 
 ## Hardware
-### Pinout
+### Control display data and pin functions
 #### Z suffix, 4 button control displays
 <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/RJ45.jpg" width="200">
 
@@ -39,14 +39,19 @@ It's very likely that the PCB can be used with the VL801D and VL802D control dis
 | PIN 7         | Button: Pump / Jets     |  
 | PIN 8         | Button: Down / Cool     |
 
+### Button data
+The four buttons of the Z suffix displays are indicated by a short high pulse on the respective pins as noted in the table.
+
 ### Display data
-The display signal is made up of a clock and a data line. The complete set is made up of three 7 bit chunks and one 3 bit suffix.<br />
-The first chunk is mostly unused except for the fith bit that indicates "heater on".<br />
+The display signal is made up of a clock and a data line. The complete data set is made up of three 7 bit chunks and one 3 bit chunk.<br />
+The first chunk is mostly unused except for the fifth bit that indicates if the heater is active.<br />
 The second and third chunk represents the two digits of the seven segment display. 
 
-For example if the display shows **36** as in the oscilloscope image below, the second and third chunks are coded in BCD to 7 segment LCD. The first bit is always 0. <br /><br />
+The second and third chunks are coded in BCD to represent a 7 segment LCD layout. The first bit is always 0. <br /><br />
+If the display shows **36**:
 3 = (0)1111001 = 0x79  (Chunk 2) <br />
 6 = (0)1011111 = 0x5F  (Chunk 3) <br />
+36 is also the temperature set on the example oscilloscope image below. 
 
 
 | Chunk 1 - bit 0-6 | Chunk 2 - bit 7-13 | Chunk 3 - bit 14-20 | Chunk 4 - bit 21-23   | 
