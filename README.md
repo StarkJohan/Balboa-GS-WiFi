@@ -41,46 +41,46 @@ It's very likely that the PCB can be used with the VL801D and VL802D control dis
     <td align="center">?</td>
   </tr>
   <tr>
-    <td>Pin 2</td>
-    <td>Up / Warm button</td>
-    <td>Pin 2</td>
-    <td>?</td>
+    <td align="center">Pin 2</td>
+    <td align="center">Up / Warm button</td>
+    <td align="center">Pin 2</td>
+    <td align="center">?</td>
   </tr>
   <tr>
-    <td>Pin 3</td>
-    <td>Light button</td>
-    <td>Pin 3</td>
-    <td>Button data line</td>
+    <td align="center">Pin 3</td>
+    <td align="center">Light button</td>
+    <td align="center">Pin 3</td>
+    <td align="center">Button data line</td>
   </tr>
   <tr>
-    <td>Pin 4</td>
-    <td>GND</td>
-    <td>Pin 4</td>
-    <td>GND</td>
+    <td align="center">Pin 4</td>
+    <td align="center">GND</td>
+    <td align="center">Pin 4</td>
+    <td align="center">GND</td>
   </tr>
   <tr>
-    <td>Pin 5</td>
-    <td>Display data line</td>
-    <td>Pin 5</td>
-    <td>Display data line</td>
+    <td align="center">Pin 5</td>
+    <td align="center">Display data line</td>
+    <td align="center">Pin 5</td>
+    <td align="center">Display data line</td>
   </tr>
   <tr>
-    <td>Pin 6</td>
-    <td>Clock line</td>
-    <td>Pin 6</td>
-    <td>Clock line</td>
+    <td align="center">Pin 6</td>
+    <td align="center">Clock line</td>
+    <td align="center">Pin 6</td>
+    <td align="center">Clock line</td>
   </tr>
   <tr>
-    <td>Pin 7</td>
-    <td>Pump / Jets button</td>
-    <td>Pin 7</td>
-    <td>5 VDC</td>
+    <td align="center">Pin 7</td>
+    <td align="center">Pump / Jets button</td>
+    <td align="center">Pin 7</td>
+    <td align="center">5 VDC</td>
   </tr>
   <tr>
-    <td>Pin 8</td>
-    <td>Down / Cool button</td>
-    <td>Pin 8</td>
-    <td>?</td>
+    <td align="center">Pin 8</td>
+    <td align="center">Down / Cool button</td>
+    <td align="center">Pin 8</td>
+    <td align="center">?</td>
   </tr>
 </table>
 
