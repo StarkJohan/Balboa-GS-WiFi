@@ -15,16 +15,16 @@ The PCB is currently in a protoype stage. It is tested and confirmed to support 
 - GS500Z
 - GS501Z
 
-The PCB should thus be compatible with the following control displays:
+The PCB should thus be compatible with the following control displays (Z suffix controllers):
 - VL200, VL240, VL260, VL400, VL401, VL402, VL403, VL404, VL406T, VL406U (these are compatible with the Z suffix main controllers)
 
-The PCB has solder jumpers that can be set the pinout to be compatible with either the pinout of the panels above (named 4 button displays below, Z suffic controlelrs) or the SZ controllers using the following displays:
+The PCB has solder jumpers that can be set the pinout to be compatible with either the pinout of the panels above or the SZ suffix controllers using the following displays:
 - VL600S, VL700S, VL701S, VL702S
 
 ## Hardware
 
 ### Pinouts
-## Z suffix, 4 button control displays
+#### Z suffix, 4 button control displays
 <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/RJ45.jpg" width="200">
 
 | PIN           | Description             | 
