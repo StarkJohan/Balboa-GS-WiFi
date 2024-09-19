@@ -1,8 +1,8 @@
 # Balboa GS WiFi Controller
 
 <p align="center">
-<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/balboa_gs_unit.jpg" width="450"><br />
-<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/panel_ns.jpg" width="300"><img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/panel_vl406u.jpg" width="300">
+<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/doc/images/balboa_gs_unit.jpg" width="450"><br />
+<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/doc/images/panel_ns.jpg" width="300"><img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/doc/images/panel_vl406u.jpg" width="300">
 </p>
 
 
@@ -83,7 +83,7 @@ It's very likely that the PCB can be used with the VL801D and VL802D control dis
   </tr>
 </table>
 
-<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/RJ45.jpg" width="200">
+<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/doc/images/RJ45.jpg" width="200">
 
 For more info on the SZ suffix controller pinout and data format, see the <a href="https://github.com/MagnusPer/Balboa-GS510SZ">MagnusPer</a> repo and for D suffix controllers the <a href="https://github.com/Shuraxxx/-Balboa-GS523DZ-with-panel-VL801D-DeluxeSerie--MQTT">Shuraxxx</a> repo.
 
@@ -112,7 +112,7 @@ If the display shows **36**: <br />
 | ?                 |                    |                     |                       | 
 | ?                 |                    |                     |                       | 
 
-<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/scope_data.png">
+<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/doc/images/scope_data.png">
 
 
 ## PCB basics
@@ -120,14 +120,14 @@ If the display shows **36**: <br />
 The PCB is connected in paralell to the existing controller display. A bidirectional levelshifter is connected to clock, data, and button lines to allow for reading the button inputs as well as sending pulses on any line. As all button data is indicated with a high pulse in some shape or form, both Z and SZ compatible displays should work with this setup. <br />
 To accommodate for the difference in pinout between Z and SZ controllers the PCB has three solder jumpers. Their default state is not connected which means a selection needs to be made before the PCB will accept power from the RJ45 connector. <br />
 
-<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/jumpers.png" width="200"> <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/levelshifter.png" width="300">
+<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/doc/images/jumpers.png" width="200"> <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/levelshifter.png" width="300">
 
 ### Installation notes
 - When connecting the PCB the SPA controller will reboot and go through the normal boot process. This is expected and also happens when an original display controller is connected.
 - The male RJ45 connector soldered to the PCB fits very loosely in the female connector of the main controller board. The PCB has a small rectangular opening in which a small plastic pin can be inserted to friction fit the PCB in place. If this pin is the correct size, the mounting will be very reliable.
 - As an alternative to the above install position an RJ45 cable can be used to connect the PCB.<br /><br />
 
-<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/pcb_example.jpg" width="350"> <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/extras/images/pcb_installed.jpg" width="350">
+<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/doc/images/pcb_example.jpg" width="350"> <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/doc/images/pcb_installed.jpg" width="350">
 
 ## Software
 ### Version 0.1 
