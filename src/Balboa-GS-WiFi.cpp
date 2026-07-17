@@ -7,30 +7,16 @@
 #include "Balboa_GS_Interface.h"        // https://github.com/MagnusPer/Balboa-GS510SZ
 #include "secrets.h"                    // gitignored - copy secrets.h.example and fill in real values
 
-/*
- *  SPA display controller for Balboa system GS. Reads the clock/data protocol shared by every
- *  Z/SZ/D-suffix panel (see BalboaInterface) and publishes water temp / heater / pump / light
- *  status to Home Assistant, merged into the same "Bubbelkopp" device as SDM-Universal-Env's
- *  bubbelkopp power-meter entities (both publish identifiers[0] = "bubbelkopp").
- *
- *  Only the Z-suffix controller's write side (4 discrete button GPIO lines, simulating a finger
- *  press by pulsing each pin HIGH) is implemented - see CONTROLLER_Z below and platformio.ini.
- *  SZ/D controllers multiplex buttons onto one shared data line instead, which is a different
- *  mechanism not implemented here; the [env:sz] build intentionally fails until that exists.
- *
- *  Known gap, not addressed here: BalboaInterface's own in-protocol write path and
- *  updateTemperature()/setTempActive are dead code (see git history / prior discussion) - they
- *  never actually pulse a pin, so the SPA/UpdateTemp auto-walk-to-target command and any
- *  "SetTemp" reading are non-functional. The direct GPIO button pulses below are the only
- *  write mechanism that actually works, and are what HA commands should go through.
-*/
+// SPA display controller for Balboa system GS (Z-suffix controllers only - see README/COMMENTS_ARCHIVE.md).
+// Publishes water temp/heater/pump/light status to HA, merged into the same "Bubbelkopp" device
+// as SDM-Universal-Env. BalboaInterface's own write path is dead code - GPIO button pulses below
+// are the only mechanism that actually works.
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIGURATION - everything you're likely to want to tweak lives below.
 //////////////////////////////////////////////////////////////////////////////
 
-// WiFi - was still "JAM" / an old long password (a stale, no-longer-valid network) before this
-// pass; this board would never have connected to the current network as originally written.
+// WiFi
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
 const char* WIFI_HOSTNAME = "BubbelkoppSpa";
@@ -39,23 +25,15 @@ const char* WIFI_HOSTNAME = "BubbelkoppSpa";
 const char* MQTT_BROKER_HOST = MQTT_HOST;
 const char* MQTT_USER_NAME = MQTT_USER;
 const char* MQTT_PASSWORD_SECRET = MQTT_PASSWORD;
-const int MQTT_BUFFER_SIZE = 2048; // Max publish length in bytes, defaults to 97 - discovery
-                                    // config payloads (device block + several fields/topics)
-                                    // can approach 1024, so this keeps real headroom
+const int MQTT_BUFFER_SIZE = 2048; // discovery config payloads can approach 1024 - keep headroom
 
-// HA topic naming: base/domain/deviceName/cdName<unique>/suffix, same scheme as the rest of the
-// fleet's buildTopic(). domain is the default/board-level domain; individual entities pass
-// their own domain ("sensor"/"binary_sensor") to publishEntity() directly.
+// HA topic naming: base/domain/deviceName/cdName<unique>/suffix (see buildTopic()).
 const String base = "hemma";
 String domain = "sensor";
 const String clientName = "spa";
 const String deviceName = "bubbelkopp";
 
-// Device metadata published in the HA discovery configs. This board shares one HA device with
-// SDM-Universal-Env's "bubbelkopp" meter board (both publish identifiers[0] = "bubbelkopp"), so
-// these fields must be kept identical to that project's DEVICE_MANUFACTURER/MODEL/SW_VERSION/
-// HW_VERSION/CONFIG_URL - see the ivt490/IVT490-Data pairing for why (a mismatch doesn't split
-// the device in HA, but the two firmwares will keep overwriting each other's device metadata).
+// Shared HA device metadata - must stay identical to SDM-Universal-Env's bubbelkopp fields.
 const char* DEVICE_MANUFACTURER = "StarkJohan";
 const char* DEVICE_MODEL = "SDM-HA bridge";
 const char* DEVICE_SW_VERSION = "0.2b";
@@ -68,12 +46,12 @@ const uint8_t PIN_READ  = D2; // GPIO 4
 
 #if defined(CONTROLLER_Z)
   // Z suffix: 4 discrete button GPIO lines, pulsed HIGH to simulate a physical press.
-  const uint8_t PIN_LIGHT = D8; // GPIO 15 - also read passively, see checkLightButton()
+  const uint8_t PIN_LIGHT = D8; // GPIO 15 - also read passively, see checkPhysicalButtons()
   const uint8_t PIN_UP    = D5; // GPIO 14
   const uint8_t PIN_DOWN  = D6; // GPIO 12
   const uint8_t PIN_PUMP  = D7; // GPIO 13
 #elif defined(CONTROLLER_SZ)
-  #error "SZ/D controller button-write not implemented yet - see the header comment and README"
+  #error "SZ/D controller button-write not implemented yet - see README"
 #else
   #error "No controller variant selected: build with -e z or -e sz (see platformio.ini)"
 #endif
@@ -88,74 +66,44 @@ const char* OTA_PASSWORD_SECRET = OTA_PASSWORD;
 // How often to read + publish Balboa status.
 const unsigned long STATE_PUBLISH_INTERVAL_MS = 5000;
 
-// After pressing Up/Down once, the panel blinks the display slowly to show it's now displaying
-// (and further Up/Down presses will adjust) the SET temperature rather than the water
-// temperature. Detected as: a blank display frame was seen within this many ms - see
-// isBlinking()/loop(). Long enough to bridge one blink's blank phase, short enough to revert to
-// normal water-temp readings promptly once the panel stops blinking.
+// A Temp Up/Down press makes the panel blink to show the SET temp instead of water temp - a
+// blank frame within this many ms counts as still blinking (see isBlinking()).
 const unsigned long BLINK_TIMEOUT_MS = 2000;
 
-// On boot, currentSetTemp starts at -1 (unknown) - the panel only ever reveals it via a blink,
-// which we have to trigger ourselves with a single Up press (harmless: a fresh press when not
-// already blinking only reveals the set temp, it doesn't adjust it - see messageReceived()/
-// physicalButtonHandler()). Only do this once the water temp reading has been the same, valid,
-// non-blinking value for this long, so we don't fire it off a transient boot-time garbage read.
+// How long a settled water-temp reading must hold before the boot reveal press fires (see loop()).
 const unsigned long SET_TEMP_BOOT_SETTLE_MS = 3000;
 
-// Number entity target range - the SPA's hard limits (see header comment/README).
+// Number entity target range - the SPA's hard limits.
 const int SET_TEMP_MIN = 26;
 const int SET_TEMP_MAX = 40;
 
-// How far apart to space each simulated Up/Down press while walking toward a number entity's
-// target - the hardware only accepts one-step nudges (see messageReceived()/loop()), so reaching
-// a target is a sequence of individual presses, not a single command. MUST be longer than one
-// full blink confirm cycle (blank->digit->blank, observed live at ~700-1000ms) - firing faster
-// than that outruns our own retroactive confirm logic, so by the time a press is evaluated
-// against the target, an extra press has already gone out, causing a perpetual overshoot/
-// oscillation that skips right over the target in both directions (observed live: 500ms was too
-// fast and caused exactly this). Also needs to stay comfortably inside the SPA's own
-// (undocumented) adjust-mode timeout - if a press lands after that real timeout has lapsed, the
-// SPA treats it as a fresh reveal press instead of an adjust step, stalling the walk.
-// Mostly driven by automations rather than manual slider drags, so correctness matters more
-// than speed here - kept comfortably above the observed ~700-1000ms confirm-cycle ceiling rather
-// than trimmed close to it.
+// Spacing between simulated presses while walking to a number entity's target - must exceed one
+// full blink confirm cycle (~700-1000ms observed) or the walk overshoots/oscillates around the
+// target (see COMMENTS_ARCHIVE.md for the tuning history).
 const unsigned long WALK_STEP_INTERVAL_MS = 1200;
 
-// If currentSetTemp hasn't moved for this many consecutive press attempts, assume a press
-// landed outside the SPA's real adjust-mode window and got treated as a no-op reveal instead of
-// an adjust (see WALK_STEP_INTERVAL_MS) - force a clean break so the next press starts a
-// brand-new episode (goes through the full reveal semantics again) rather than continuing to
-// blindly press into a dead window forever.
+// Consecutive no-progress presses before assuming one landed outside the SPA's adjust-mode
+// window and forcing a fresh press episode (see loop()).
 const uint8_t WALK_STALL_LIMIT = 3;
 
-// Safety cap on how long a walk-to-target may run before giving up - bounds it the same way the
-// rest of the fleet bounds its wait loops, in case currentSetTemp somehow never reaches the
-// target (e.g. persistent decode trouble).
+// Safety cap on how long a walk-to-target may run before giving up.
 const unsigned long WALK_MAX_DURATION_MS = 30000;
 
-// Line noise occasionally corrupts a single decode cycle - visibly, as a garbled digit
-// ("3-"/"J-"/"--", see isCorruptedFrame()), and less visibly as a status bit flipping for one
-// frame (e.g. Light). A changed boolean status reading must persist for this long before it's
-// accepted, rather than trusting any single decode in isolation - see DebouncedBool/loop().
+// A changed boolean status reading must persist this long before being accepted (filters
+// single-cycle noise flips, see DebouncedBool).
 const unsigned long STATUS_DEBOUNCE_MS = 250;
 
-// NTP - only feeds the _boottime/_uptime diagnostic attributes. Uses the ESP8266 core's own
-// configTime()/time() (POSIX TZ string, handles DST) rather than NTPClient with a manual fixed
-// offset - NTPClient's offset bakes local time into getEpochTime() itself, which then gets
-// local-shifted a second time by HA's timestamp_local filter on _boottime, showing "in 2 hours"
-// instead of the real time (same fix as IVT490-Data).
+// NTP - feeds _boottime/_uptime only. Uses configTime()/time() (not NTPClient's manual offset)
+// so HA's timestamp_local filter doesn't double-apply the timezone shift.
 const char* NTP_SERVER = "10.10.10.1";
 const char* NTP_TZ = "CET-1CEST,M3.5.0/02,M10.5.0/03";
 
-// Connectivity: how often to retry each layer while it's down, and how long a combined
-// WiFi+MQTT outage may last before giving up and rebooting the whole device.
+// Connectivity retry/outage timing.
 const unsigned long WIFI_RECONNECT_INTERVAL_MS = 10000;
 const unsigned long MQTT_RECONNECT_INTERVAL_MS = 5000;
 const unsigned long MAX_OFFLINE_MS = 5UL * 60UL * 1000UL; // 5 min
 
-// Boot-time waits are bounded so a single unresponsive dependency can never hang startup
-// forever. WiFi is required for anything else to work, so it reboots on timeout. NTP and MQTT
-// are best-effort at boot - they keep being retried/refreshed non-blockingly afterward.
+// Bounded boot waits - WiFi reboots on timeout, NTP/MQTT are best-effort and keep retrying after.
 const uint8_t WIFI_CONNECT_MAX_ATTEMPTS = 60; // * 500ms delay = ~30s
 const uint8_t NTP_MAX_ATTEMPTS = 10;          // * 1s delay = ~10s
 const uint8_t MQTT_CONNECT_MAX_ATTEMPTS = 10; // * 1s delay = ~10s
@@ -177,32 +125,18 @@ unsigned long lastPublish = 0;
 
 BalboaInterface Balboa(PIN_CLOCK, PIN_READ, PIN_LIGHT);
 
-// Set the moment a blank display frame is observed (see loop()); isBlinking() stays true for
-// BLINK_TIMEOUT_MS after that.
-unsigned long lastBlankFrameMs = 0;
+unsigned long lastBlankFrameMs = 0; // last blank frame seen; isBlinking() true within BLINK_TIMEOUT_MS of this
 
-// A numeric display frame can only be confirmed as the SET temperature (rather than the water
-// temperature) in hindsight, once it turns out to be immediately followed by a blank frame -
-// predicting it forward from a timeout alone (as Balboa.setTempActive would, if we drove it)
-// misses the first value frame of a new blink sequence (no blank has happened yet when it
-// decodes) and over-extends past the last one (still "blinking" for the rest of the timeout
-// window). So this is tracked here in the sketch instead of relying on the library's own
-// setTempActive/setTemperature fields, which have exactly that forward-only limitation.
+// Water vs set temp can only be told apart in hindsight (a frame followed by a blank was the
+// set temp) - tracked here rather than via the library's forward-only setTempActive.
 String previousFrame = "";
-unsigned long previousFrameMs = 0; // when previousFrame was captured - see blinkStartMs
+unsigned long previousFrameMs = 0;
 int currentWaterTemp = -1;
 int currentSetTemp = -1;
-// currentWaterTemp's value from just before its most recent write, so a write that turns out
-// (via the next blank) to have actually been a set-temp frame can be rolled back rather than
-// left standing for the whole rest of the blink sequence.
-int waterTempBeforeLastWrite = -1;
-// Tracks how long currentWaterTemp has held its current value, so the boot set-temp reveal
-// (see SET_TEMP_BOOT_SETTLE_MS/loop()) waits for a settled reading rather than firing off
-// whatever partial/garbage value happens to be showing right after power-on.
+int waterTempBeforeLastWrite = -1; // for rolling back a water-temp write that turns out to be set-temp
 int waterTempAtLastSettleCheck = -1;
 unsigned long waterTempSettledSinceMs = 0;
-// Fires exactly once per boot, the moment the water temp looks settled.
-bool bootSetTempTriggered = false;
+bool bootSetTempTriggered = false; // fires exactly once per boot
 
 // Number entity walk-to-target state (see loop()/messageReceived()).
 bool walkTargetActive = false;
@@ -211,23 +145,13 @@ unsigned long walkLastPressMs = 0;
 unsigned long walkStartMs = 0;
 int walkLastSeenSetTemp = -999; // sentinel, distinct from the real "unknown" value of -1
 uint8_t walkStallCount = 0;
-// When the current blink episode began (see markBlinkStart()). A blank frame only confirms the
-// immediately-preceding frame as the set temperature if that frame was captured at/after this
-// point - otherwise it could be a stale pre-press frame (still the old water temp reading) that
-// merely happened to be sitting there when the first blank of a new episode arrived.
-unsigned long blinkStartMs = 0;
-// True from the start of a new blink episode until its first blank frame has been seen. The
-// panel takes a moment to actually redraw after a press - our own isBlinking() flips true the
-// instant we press (see markBlinkStart()), but the display may still show the stale pre-press
-// value for that first cycle. Confirming off the first blank risks confirming that stale value
-// as the set temp (observed live: a "37"/water-temp blip briefly reported as set_temp=37 before
-// self-correcting to the real 36 on the next cycle) - so the first blank only arms detection,
-// and confirmation waits for the second blank onward, once the panel has genuinely caught up.
+
+unsigned long blinkStartMs = 0; // when the current blink episode began (see markBlinkStart())
+// True until the episode's first blank is seen - the panel hasn't necessarily redrawn yet on
+// the very first blank, so that one is skipped rather than trusted (see loop()).
 bool blinkFirstBlankPending = false;
 
-// Requires a changed boolean reading to persist for STATUS_DEBOUNCE_MS before accepting it,
-// filtering out a single noise-flipped decode cycle rather than propagating it. `confirmed` is
-// the debounced, trustworthy value to actually use.
+// Requires a changed reading to persist for STATUS_DEBOUNCE_MS before accepting it.
 struct DebouncedBool {
   bool confirmed = false;
   bool candidate = false;
@@ -236,11 +160,11 @@ struct DebouncedBool {
 
   void update(bool raw, unsigned long nowMs) {
     if (raw == confirmed) {
-      hasCandidate = false; // matches the accepted value, nothing to debounce
+      hasCandidate = false;
       return;
     }
     if (!hasCandidate || candidate != raw) {
-      candidate = raw; // a new/different divergent reading - restart the confirmation timer
+      candidate = raw;
       candidateSinceMs = nowMs;
       hasCandidate = true;
       return;
@@ -255,8 +179,7 @@ DebouncedBool debouncedPump1;
 DebouncedBool debouncedLight;
 DebouncedBool debouncedUnknownFlag;
 
-// Snapshot of the last-published state, used to detect a real change worth publishing
-// immediately rather than waiting for the next heartbeat (see stateChanged()/publishState()).
+// Last-published snapshot, for detecting a real change worth publishing immediately (see stateChanged()).
 int lastPubWaterTemp = -1;
 int lastPubSetTemp = -1;
 String lastPubDisplay = "";
@@ -272,7 +195,6 @@ unsigned long lastMqttAttempt = 0;
 
 //////////////////////////////////////////////////////////////////////////////
 
-// base is a fixed project-wide constant; devName/uid identify this board's HA device.
 String buildTopic(String devName, String uid, String domain, String unique, String suffix) {
   return base + "/" + domain + "/" + devName + "/" + uid + unique + "/" + suffix;
 }
@@ -299,9 +221,7 @@ void publishAttributes() {
   client.publish(attrTopic.c_str(), output, false, 1);
 }
 
-// Publishes one JSON blob with every read field; each entity's value_template pulls its own
-// key back out, same pattern as SDM-Universal-Env/IVT490-Data. Also records the just-published
-// values so stateChanged() can detect the next real change.
+// One JSON blob with every read field; each entity's value_template pulls its own key back out.
 void publishState() {
   StaticJsonDocument<256> state;
   state["_water_temp"] = currentWaterTemp;
@@ -326,16 +246,8 @@ void publishState() {
   hasPublishedOnce = true;
 }
 
-// True if any field differs from what was last actually published, so loop() can publish
-// immediately on a real change instead of waiting for the next heartbeat. Always true before
-// the first publish, so the very first valid read goes out immediately too.
-//
-// LCD_display and _heater are tracked here deliberately raw/undebounced, including their
-// flicker - kept as "real time" diagnostics per request, at the cost of publishing much more
-// often while blinking/flashing. Both are entity_category=diagnostic sensors precisely because
-// of this. Heater specifically flashes rapidly as a natural SPA state sometimes (cause not yet
-// understood - possibly related to ignition/startup) - debouncing it like the other status bits
-// would hide that signal instead of letting it be observed and characterized over time.
+// True if any field differs from what was last published (see loop()). Display/Heater are
+// tracked raw/undebounced on purpose - real-time diagnostics, at the cost of more publishes.
 bool stateChanged() {
   if (!hasPublishedOnce) return true;
   return currentWaterTemp != lastPubWaterTemp
@@ -347,14 +259,8 @@ bool stateChanged() {
       || debouncedUnknownFlag.confirmed != lastPubUnknownFlag;
 }
 
-// entName is also used as the JSON key in the state blob published by publishState(). Pass
-// customExpr for anything that needs more than a plain value_json.<entName> lookup (e.g. the
-// ON/OFF conversion for binary_sensors). device_class/state_class/unit_of_measurement/
-// precision are omitted from the discovery config entirely when not applicable, rather than
-// published as an empty string - HA validates several of these fields against fixed enums and
-// silently rejects the entity's config if given "" instead of an omitted key. stateTopicOverride
-// lets an entity read from attrTopic instead of the main state blob (see Uptime/Boottime below,
-// which live in publishAttributes()'s payload, not publishState()'s).
+// entName also doubles as the state-blob JSON key. customExpr overrides the default
+// value_json.<entName> lookup; stateTopicOverride reads from attrTopic instead of sTopic.
 void publishEntity(StaticJsonDocument<400>& jObj, String domain, String entName, String friendlyName, String device_class, String state_class, String unit_of_measurement, int precision = -1, String customExpr = "", String entityCategory = "", String stateTopicOverride = "") {
   String output;
   StaticJsonDocument<900> ent;
@@ -377,14 +283,12 @@ void publishEntity(StaticJsonDocument<400>& jObj, String domain, String entName,
   serializeJson(ent, output);
 
   cTopic = buildTopic(deviceName, cdName, domain, entName, "config");
-  if (!client.publish(cTopic.c_str(), output, true, 1)) { // Retain config string
+  if (!client.publish(cTopic.c_str(), output, true, 1)) {
     publishDebug("Entity config publish FAILED for " + entName + ", length=" + String(output.length()));
   }
 }
 
-// HA button entity for one of the four hard-wired GPIO functions. All four share the same
-// command_topic (writeTopic) - messageReceived() already dispatches on payload, matching how
-// SPA/Write has always worked, so this only adds discovery, no new write-side logic.
+// Button entity for one of the four hard-wired GPIO functions; all share writeTopic's dispatch.
 void publishButtonEntity(StaticJsonDocument<400>& jObj, String entName, String friendlyName, String payloadPress) {
   String output;
   StaticJsonDocument<700> ent;
@@ -400,19 +304,14 @@ void publishButtonEntity(StaticJsonDocument<400>& jObj, String entName, String f
   serializeJson(ent, output);
 
   cTopic = buildTopic(deviceName, cdName, "button", entName, "config");
-  if (!client.publish(cTopic.c_str(), output, true, 1)) { // Retain config string
+  if (!client.publish(cTopic.c_str(), output, true, 1)) {
     publishDebug("Button config publish FAILED for " + entName + ", length=" + String(output.length()));
   }
 }
 
-// HA light entity. MQTT light's default schema compares state_value_template's output
-// directly against payload_on/payload_off (confirmed via isolated discovery tests), so unlike
-// the earlier switch attempt, payload_on/payload_off must be real "ON"/"OFF" - not both
-// "Lights" - for HA to ever resolve a known state (and get the amber bulb-glow styling).
-// The physical button is still just a toggle (one pulse = flip), so messageReceived() is the
-// half of this that makes it correct: it only pulses PIN_LIGHT when the commanded direction
-// actually differs from the real (debounced) current state (see debouncedLight), since pulsing
-// while already in the requested state would incorrectly flip it the wrong way.
+// HA light entity - payload_on/off must match state_value_template's own ON/OFF output (MQTT
+// light has no state_on/off override like switch does). messageReceived() only pulses the
+// physical toggle when the commanded direction differs from the debounced real state.
 void publishLightEntity(StaticJsonDocument<400>& jObj, String entName, String friendlyName) {
   String output;
   StaticJsonDocument<900> ent;
@@ -422,8 +321,6 @@ void publishLightEntity(StaticJsonDocument<400>& jObj, String entName, String fr
   ent["unique_id"] = cdName + entName;
   ent["command_topic"] = writeTopic;
   ent["state_topic"] = sTopic;
-  // MQTT light (default schema) parses state via state_value_template, not value_template
-  // (unlike sensor/binary_sensor/switch).
   ent["state_value_template"] = "{{ 'ON' if value_json._light else 'OFF' }}";
   ent["payload_on"] = "ON";
   ent["payload_off"] = "OFF";
@@ -434,16 +331,13 @@ void publishLightEntity(StaticJsonDocument<400>& jObj, String entName, String fr
   serializeJson(ent, output);
 
   cTopic = buildTopic(deviceName, cdName, "light", entName, "config");
-  if (!client.publish(cTopic.c_str(), output, true, 1)) { // Retain config string
+  if (!client.publish(cTopic.c_str(), output, true, 1)) {
     publishDebug("Light config publish FAILED for " + entName + ", length=" + String(output.length()));
   }
 }
 
-// HA number entity for the target ("set") temperature - min/max are the SPA's hard 26-40C
-// limits. command_topic reuses updateTempTopic (previously dead code, see header comment) -
-// loop()'s walk state machine turns a received target into a sequence of real Up/Down presses,
-// the only way the hardware actually accepts an adjustment. State reads back off the same
-// _set_temp key the read-only sensor uses, so there's no separate state to keep in sync.
+// Number entity for the target set temp (26-40C) - command_topic reuses updateTempTopic, and
+// loop()'s walk state machine turns a target into real Up/Down presses.
 void publishNumberEntity(StaticJsonDocument<400>& jObj, String entName, String friendlyName) {
   String output;
   StaticJsonDocument<900> ent;
@@ -465,22 +359,18 @@ void publishNumberEntity(StaticJsonDocument<400>& jObj, String entName, String f
   serializeJson(ent, output);
 
   cTopic = buildTopic(deviceName, cdName, "number", entName, "config");
-  if (!client.publish(cTopic.c_str(), output, true, 1)) { // Retain config string
+  if (!client.publish(cTopic.c_str(), output, true, 1)) {
     publishDebug("Number config publish FAILED for " + entName + ", length=" + String(output.length()));
   }
 }
 
-// One-time migration cleanup: removes the "switch"-domain entity (superseded by reverting back
-// to the light entity above, now with the correct state_value_template key) by overwriting its
-// retained config with an empty payload. Safe/idempotent to call on every connect - remove this
-// once confirmed the old entity is gone from HA.
+// Removes the superseded switch-domain Lights entity - safe/idempotent, remove once confirmed gone.
 void clearOldLightEntity() {
   cTopic = buildTopic(deviceName, cdName, "switch", "_light", "config");
   client.publish(cTopic.c_str(), "", true, 1);
 }
 
-// Republishes HA discovery configs + online status and resubscribes to the command topics. A
-// fresh MQTT connection has no subscriptions, so this must run after every connect.
+// Republishes HA discovery + online status and resubscribes - runs after every fresh MQTT connect.
 void announceMqttConnected() {
   StaticJsonDocument<400> dev;
   dev["identifiers"][0] = deviceName;
@@ -492,33 +382,18 @@ void announceMqttConnected() {
   dev["configuration_url"] = DEVICE_CONFIG_URL;
 
   publishEntity(dev, "sensor", "_water_temp", "Water temperature", "temperature", "measurement", "\xC2\xB0" "C", 0);
-  // Only meaningful while the panel is blinking (see isBlinking()) - holds the last value seen
-  // during that state the rest of the time, same as a physical display would.
   publishEntity(dev, "sensor", "_set_temp", "Set temperature", "temperature", "measurement", "\xC2\xB0" "C", 0);
   publishNumberEntity(dev, "_set_temp_target", "Set temperature target");
-  // Real-time raw, deliberately not debounced (see stateChanged()) - it flashes rapidly as a
-  // natural SPA state sometimes, not yet understood, so it's left unfiltered.
   publishEntity(dev, "binary_sensor", "_heater", "Heater", "heat", "", "", -1, "'ON' if value_json._heater else 'OFF'");
   publishEntity(dev, "binary_sensor", "_pump1", "Pump 1", "running", "", "", -1, "'ON' if value_json._pump1 else 'OFF'");
-  // Real-time raw diagnostic - intentionally not throttled/de-blinked (see stateChanged()).
   publishEntity(dev, "sensor", "_display", "Display", "", "", "", -1, "", "diagnostic");
-  // bit23's actual meaning was never determined (README speculates Pump 2 / Blower) - exposed
-  // as a raw diagnostic flag rather than left unpublished.
   publishEntity(dev, "binary_sensor", "_unknown_flag", "Unknown flag (bit23)", "", "", "", -1, "'ON' if value_json._unknown_flag else 'OFF'", "diagnostic");
-  // Read-only diagnostic mirror of the switch's real status (see publishLightEntity()) - kept
-  // separate/entity_category=diagnostic rather than the main control, distinct unique_id
-  // (_light_diag) from the switch's (_light) to avoid a collision.
+  // Read-only mirror of Lights' real status, distinct unique_id from the light entity below.
   publishEntity(dev, "binary_sensor", "_light_diag", "Lights", "light", "", "", -1, "'ON' if value_json._light else 'OFF'", "diagnostic");
 
-  // Uptime/Boottime, matching the dedicated diagnostic sensors added to IVT490-Data - sourced
-  // from attrTopic (publishAttributes()' payload), since that's where these two keys actually
-  // live, not the main state blob.
   publishEntity(dev, "sensor", "_uptime", "Uptime", "duration", "measurement", "s", 0, "", "diagnostic", attrTopic);
   publishEntity(dev, "sensor", "_boottime", "Boottime", "timestamp", "", "", -1, "value_json._boottime | timestamp_local", "diagnostic", attrTopic);
 
-  // Buttons for the three hard-wired GPIO functions that aren't a toggleable Light (see
-  // pulseButton()/messageReceived()). Lights merged into one "light" entity below instead of a
-  // separate binary_sensor + button pair, so it both shows real status and can be toggled.
   publishButtonEntity(dev, "_temp_up", "Temp Up", "TempUp");
   publishButtonEntity(dev, "_temp_down", "Temp Down", "TempDown");
   publishButtonEntity(dev, "_pump1_btn", "Pump 1", "Pump1");
@@ -534,19 +409,13 @@ void announceMqttConnected() {
   client.subscribe(updateTempTopic.c_str());
 }
 
-// lookup_LCD_character() (in the library) falls back to '-' for any 7-segment pattern it
-// doesn't recognize - i.e. this frame's digit(s) got corrupted by line noise mid-decode. Used
-// to reject the whole frame (display text AND status bits, since they're all part of the same
-// 23-bit cycle) rather than propagate a glitch like "3-"/"J-"/"--".
+// The library falls back to '-' for any unrecognized segment pattern - reject the whole frame
+// (all bits, same 23-bit cycle) rather than propagate a glitch like "3-"/"J-"/"--".
 bool isCorruptedFrame(const String &s) {
   return s.indexOf('-') >= 0;
 }
 
-// A blank display frame is every character being a space (lookup_LCD_character() returns " "
-// for an all-off segment pattern) - this is what the panel shows during the blank half of its
-// blink cycle, distinct from "" (no decode has happened yet at all, see hasValidRead in loop()).
-// "" itself must NOT count as blank here, or every iteration before the first real decode would
-// look like a blink frame.
+// Every char a space = the blank half of the blink cycle; "" (no decode yet) must NOT count.
 bool isBlankFrame(const String &s) {
   if (s.length() == 0) return false;
   for (unsigned int i = 0; i < s.length(); i++) {
@@ -555,22 +424,13 @@ bool isBlankFrame(const String &s) {
   return true;
 }
 
-// True while the panel is (or very recently was) blinking, i.e. showing the set temperature
-// rather than the water temperature - see BLINK_TIMEOUT_MS/loop().
+// True while the panel is (or was very recently) showing the set temp - see BLINK_TIMEOUT_MS.
 bool isBlinking() {
   return lastBlankFrameMs != 0 && (millis() - lastBlankFrameMs < BLINK_TIMEOUT_MS);
 }
 
-// The panel only ever starts blinking as a direct result of a Temp Up/Down press, and we're
-// always the one causing or directly detecting that press (see the TempUp/TempDown handling in
-// messageReceived()/physicalButtonHandler()) - so we can arm the blink window proactively right
-// then, before the panel has even had a chance to show the first blinking frame, rather than
-// waiting to reactively see a blank frame prove it after the fact. loop()'s rollback logic
-// remains as a fallback in case the panel ever blinks for some other, unknown reason.
-//
-// Only advances blinkStartMs on the actual start of a new episode (not on every repeated
-// press while already blinking) - it marks the cutoff before which a captured frame is
-// considered stale/pre-press and must not be confirmed as the set temperature (see loop()).
+// Arms the blink window proactively the instant we press, rather than waiting to see a blank
+// frame prove it. Only advances blinkStartMs on a genuinely new episode (see loop()).
 void markBlinkStart() {
   if (!isBlinking()) {
     blinkStartMs = millis();
@@ -579,8 +439,7 @@ void markBlinkStart() {
   lastBlankFrameMs = millis();
 }
 
-// Simulates a physical button press by pulsing the pin HIGH, matching how a real finger press
-// looks to the controller. Only meaningful for CONTROLLER_Z (see header comment).
+// Simulates a physical button press (CONTROLLER_Z only).
 void pulseButton(uint8_t pin) {
   pinMode(pin, OUTPUT);
   digitalWrite(pin, HIGH);
@@ -593,10 +452,7 @@ void messageReceived(String &topic, String &payload) {
   if (topic == writeTopic) {
     if (payload == "TempUp") { markBlinkStart(); pulseButton(PIN_UP); }
     else if (payload == "TempDown") { markBlinkStart(); pulseButton(PIN_DOWN); }
-    // The light entity's command_topic sends real ON/OFF (see publishLightEntity()), but the
-    // physical button only pulses/toggles - only actually pulse it if the real current state
-    // (from the display read) differs from what was requested, otherwise a redundant press
-    // would flip it the wrong way.
+    // Only pulse if the debounced real state differs from what was requested (toggle-only button).
     else if (payload == "ON") { if (!debouncedLight.confirmed) pulseButton(PIN_LIGHT); }
     else if (payload == "OFF") { if (debouncedLight.confirmed) pulseButton(PIN_LIGHT); }
     else if (payload == "Lights") { pulseButton(PIN_LIGHT); } // legacy/manual blind toggle
@@ -604,9 +460,7 @@ void messageReceived(String &topic, String &payload) {
     else if (payload == "Stop") { Balboa.stop(); }
     else if (payload == "Reset") { ESP.restart(); }
   } else if (topic == updateTempTopic) {
-    // Number entity target - loop()'s walk state machine turns this into a sequence of real
-    // Up/Down presses, the only mechanism that actually moves the setpoint (BalboaInterface's
-    // own in-protocol write path is dead code, see header comment).
+    // Number entity target - loop()'s walk state machine drives this to real Up/Down presses.
     int target = payload.toInt();
     if (target >= SET_TEMP_MIN && target <= SET_TEMP_MAX) {
       walkTargetValue = target;
@@ -619,10 +473,8 @@ void messageReceived(String &topic, String &payload) {
   }
 }
 
-// Passive: debounced monitoring of all 4 hard-wired button lines (does not drive them),
-// reporting a real physical press the same way an MQTT-triggered one is identified. Per the
-// README, these lines idle LOW and pulse HIGH on press - opposite polarity from the debounce
-// library's BTN_PRESSED=0/BTN_OPEN=1 convention, hence the `!digitalRead()` inversion below.
+// Passive debounced monitoring of the 4 hard-wired lines (idle LOW/pulse HIGH, opposite of the
+// debounce library's convention, hence !digitalRead()).
 enum PhysicalButtonId : uint8_t { BTN_ID_UP = 0, BTN_ID_DOWN = 1, BTN_ID_PUMP = 2, BTN_ID_LIGHT = 3 };
 
 void physicalButtonHandler(uint8_t id, uint8_t state) {
@@ -652,10 +504,7 @@ void checkPhysicalButtons() {
   btnLight.update(!digitalRead(PIN_LIGHT));
 }
 
-// One-time best-effort connect used at boot. WiFi is required for anything else to work, so
-// it's worth waiting (bounded) and rebooting if it never comes up. MQTT is attempted but not
-// required to proceed - if it doesn't connect in time, setup() continues (OTA still comes up)
-// and maintainConnectivity() in loop() keeps retrying it non-blockingly afterward.
+// Bounded boot connect - WiFi reboots on timeout; MQTT is best-effort, retried later in loop().
 void connect() {
   uint8_t wifiAttempts = 0;
   while (WiFi.status() != WL_CONNECTED) {
@@ -675,9 +524,7 @@ void connect() {
   announceMqttConnected();
 }
 
-// Non-blocking reconnect used from loop(): never delays or blocks, so ArduinoOTA.handle() and
-// client.loop() keep running during an outage. WiFi and MQTT are retried independently on
-// their own cooldowns; if the combined outage runs too long, reboot as a last resort.
+// Non-blocking reconnect - never delays/blocks, so OTA and MQTT keep servicing during an outage.
 void maintainConnectivity() {
   unsigned long nowMs = millis();
   bool wifiUp = (WiFi.status() == WL_CONNECTED);
@@ -720,7 +567,6 @@ void setup() {
   pinMode(PIN_PUMP, INPUT);
   pinMode(PIN_LIGHT, INPUT);
 
-  // Build topics
   aTopic = buildTopic(deviceName, cdName, domain, "", "availability");
   dTopic = buildTopic(deviceName, cdName, domain, "", "debug");
   sTopic = buildTopic(deviceName, cdName, domain, "", "state");
@@ -735,18 +581,14 @@ void setup() {
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
   WiFi.begin(ssid, password);
 
-  // MQTT
   client.begin(MQTT_BROKER_HOST, wclient);
   client.setWill(aTopic.c_str(), "offline", true, 1);
   client.onMessage(messageReceived);
 
   connect(); // WiFi + MQTT
 
-  // NTP - runs after connect() so WiFi is actually confirmed up first, rather than racing
-  // WiFi's own (still in-progress) connection attempt and wasting every bounded attempt on a
-  // network that isn't up yet. Best-effort and bounded either way - this only feeds a cosmetic
-  // boottime attribute (also self-corrected later in loop() as a backstop), not worth blocking
-  // startup over if the NTP server doesn't answer.
+  // Runs after connect() so WiFi is confirmed up first; best-effort/bounded, only feeds a
+  // cosmetic boottime attribute (self-corrected later in loop() as a backstop).
   configTime(NTP_TZ, NTP_SERVER);
   for (uint8_t ntpAttempts = 0; time(&now) < 1600000000L && ntpAttempts < NTP_MAX_ATTEMPTS; ntpAttempts++) {
     delay(1000);
@@ -755,7 +597,6 @@ void setup() {
 
   Balboa.begin();
 
-  // Setup OTA
   ArduinoOTA.setPort(OTA_PORT);
   ArduinoOTA.setPassword(OTA_PASSWORD_SECRET);
   ArduinoOTA.setHostname(WIFI_HOSTNAME);
@@ -788,44 +629,27 @@ void loop() {
 
   Balboa.loop();
 
-  // Retroactively confirm/attribute the frame from the *previous* iteration, now that we know
-  // what followed it - see the currentWaterTemp/currentSetTemp comment above for why this can
-  // only be done in hindsight, not predicted forward.
+  // Retroactively confirm the *previous* iteration's frame now that we know what followed it.
   String frame = Balboa.LCD_display;
   unsigned long nowFrameMs = millis();
 
-  // Line noise garbled this decode cycle's digits (e.g. "3-"/"J-"/"--") - the rest of this same
-  // 23-bit frame's bits (heater/pump1/light/unknown_flag) are suspect too, so the whole block
-  // below skips this cycle entirely rather than propagate any of it. previousFrame/
-  // previousFrameMs are deliberately left untouched, so the next good frame still gets compared
-  // against the last known-good one, not this corrupted one.
+  // Corrupted frame - skip this whole cycle; previousFrame/previousFrameMs stay untouched.
   if (!isCorruptedFrame(frame)) {
     if (isBlankFrame(frame)) {
       if (!isBlinking()) {
-        // First blank of an episode we didn't proactively mark via markBlinkStart() (unknown
-        // cause) - don't trust whatever frame preceded it, it may predate whatever triggered
-        // this. Confirming starts from the next blink cycle onward instead.
+        // Blink started for an unknown reason (no markBlinkStart()) - don't trust the preceding frame.
         blinkStartMs = nowFrameMs;
         blinkFirstBlankPending = true;
       }
-      // This blank confirms the previous (non-blank) frame was a SET temperature reading, not
-      // water temperature - but only if that frame was actually captured after this blink
-      // episode began (blinkStartMs), not a stale frame left over from before the button was
-      // pressed that merely happened to still be sitting there. The very first blank of the
-      // episode is skipped regardless (see blinkFirstBlankPending) - the panel hasn't
-      // necessarily redrawn yet by then, so previousFrame may still be the stale pre-press
-      // value even though it was captured after blinkStartMs.
+      // Confirms the preceding non-blank frame as the set temp, but only if captured after
+      // blinkStartMs, and never on the episode's first blank (panel may not have redrawn yet).
       if (blinkFirstBlankPending) {
         blinkFirstBlankPending = false;
       } else if (previousFrame.length() > 0 && !isBlankFrame(previousFrame) && previousFrameMs >= blinkStartMs) {
         int v = previousFrame.toInt();
         if (v > 0) {
           currentSetTemp = v;
-          // The very first frame of a new blink sequence arrives before any blank has been
-          // seen yet, so isBlinking() was still false when it decoded and it got optimistically
-          // written to currentWaterTemp below (in the branch that handled it as the *previous*
-          // frame, one loop() iteration ago) - now that this blank proves it was actually the
-          // set temp, undo that if it's still standing.
+          // Undo an optimistic water-temp write if it turns out that frame was actually the set temp.
           if (currentWaterTemp == v) {
             currentWaterTemp = waterTempBeforeLastWrite;
           }
@@ -833,11 +657,8 @@ void loop() {
       }
       lastBlankFrameMs = nowFrameMs;
     } else if (frame.length() > 0) {
-      // Only count this as a confirmed water-temp reading if we're not still within a blink
-      // window. Still written optimistically otherwise (rather than withheld) so a genuine
-      // water temp change is reflected promptly - the rollback above corrects it within one
-      // decode cycle on the rare occasion this guess turns out wrong (the first frame of a new
-      // blink).
+      // Only a confirmed water-temp reading outside a blink window; written optimistically
+      // otherwise (rollback above corrects a wrong guess within one cycle).
       if (!isBlinking()) {
         int v = frame.toInt();
         if (v > 0) {
@@ -849,17 +670,13 @@ void loop() {
     previousFrame = frame;
     previousFrameMs = nowFrameMs;
 
-    // Filters a single noise-flipped status bit (e.g. Light flickering) the same way the digit
-    // corruption above is filtered - see DebouncedBool/STATUS_DEBOUNCE_MS. Heater is
-    // deliberately excluded - see stateChanged().
+    // Heater is deliberately excluded from debouncing - see stateChanged().
     debouncedPump1.update(Balboa.displayPump1, nowFrameMs);
     debouncedLight.update(Balboa.displayLight, nowFrameMs);
     debouncedUnknownFlag.update(Balboa.displayBit23, nowFrameMs);
   } // !isCorruptedFrame(frame)
 
-  // Boot set-temp reveal: once the water temp has held one valid value for SET_TEMP_BOOT_SETTLE_MS
-  // (and we're not already blinking, e.g. from a real user press racing this), simulate a single
-  // Up press. That's the only way to learn the set temp - the panel never shows it unprompted.
+  // Boot set-temp reveal: once water temp has settled, simulate a single Up press to learn it.
   if (currentWaterTemp != waterTempAtLastSettleCheck) {
     waterTempAtLastSettleCheck = currentWaterTemp;
     waterTempSettledSinceMs = nowFrameMs;
@@ -876,16 +693,9 @@ void loop() {
 
   client.loop(); // MQTT
 
-  // Number entity walk-to-target: drive currentSetTemp toward walkTargetValue via repeated
-  // single Up/Down presses, spaced WALK_STEP_INTERVAL_MS apart so the panel and our own
-  // retroactive confirm logic above have time to register each step before the next one fires.
-  //
-  // Uses a freshly-captured timestamp rather than nowFrameMs (captured at the very top of
-  // loop(), before client.loop() ran) - messageReceived() sets walkStartMs to millis() *during*
-  // client.loop() above, which can be later than nowFrameMs within this same tick. Comparing
-  // against the stale nowFrameMs would then underflow (unsigned long, walkStartMs > nowFrameMs)
-  // to a huge value, look like an instant 30s+ timeout, and cancel the walk before its first
-  // press - observed live as the walk self-cancelling within milliseconds of a fresh command.
+  // Number entity walk-to-target: repeated single presses spaced WALK_STEP_INTERVAL_MS apart.
+  // Uses a fresh timestamp, not nowFrameMs (captured before client.loop() ran) - comparing
+  // against a stale nowFrameMs could underflow and cancel the walk instantly (observed live).
   unsigned long nowWalkMs = millis();
   if (walkTargetActive) {
     if (currentSetTemp == walkTargetValue) {
@@ -902,20 +712,13 @@ void loop() {
         walkStallCount = 0;
       }
       if (walkStallCount >= WALK_STALL_LIMIT) {
-        // No progress for several presses in a row - a press likely landed outside the SPA's
-        // real adjust-mode window and got treated as a no-op reveal instead of an adjust (see
-        // WALK_STEP_INTERVAL_MS). Force our own blink tracking to fully lapse so the *next*
-        // press starts a clean, brand-new episode (full reveal semantics) instead of continuing
-        // to press into what might still be a dead window - skip this cycle's press to let that
-        // take effect first.
+        // No progress for a while - force a clean break so the next press starts a fresh episode.
         walkStallCount = 0;
         lastBlankFrameMs = 0;
         publishDebug("Number: walk stalled at " + String(currentSetTemp) + ", forcing a fresh press episode");
       } else {
         markBlinkStart();
-        // currentSetTemp == -1 (not yet revealed) presses Up, same as the boot reveal - a single
-        // press when not already blinking only reveals the set temp rather than changing it, so
-        // this is always safe regardless of which direction turns out to actually be needed.
+        // Unknown set temp (-1) presses Up - a fresh press only reveals, never adjusts, so it's safe.
         pulseButton((currentSetTemp == -1 || currentSetTemp < walkTargetValue) ? PIN_UP : PIN_DOWN);
       }
     }
@@ -924,20 +727,11 @@ void loop() {
   maintainConnectivity(); // non-blocking WiFi/MQTT reconnect
 
   unsigned long nowMs = millis();
-  // LCD_display stays "" until decodeDisplayData() runs for the first time (it's only set
-  // inside that function, and every decoded value - even blank/space segments - produces a
-  // non-empty string). Used as a proxy for "Balboa has completed at least one real read cycle"
-  // so we never publish the class's default-initialized (all-false) fields as if they were a
-  // real "everything is off" reading, same principle as the nan-streak caching elsewhere in
-  // the fleet.
+  // LCD_display stays "" until the first real decode - used to avoid publishing default-false fields.
   bool hasValidRead = (Balboa.LCD_display.length() > 0);
   bool heartbeatDue = (nowMs - lastPublish > STATE_PUBLISH_INTERVAL_MS);
 
-  // Publish immediately on a real change (near-instant, since Balboa's own decode is already
-  // interrupt-driven) rather than waiting for the next heartbeat - state_topic isn't retained,
-  // so a change sitting unpublished for up to STATE_PUBLISH_INTERVAL_MS would otherwise leave
-  // HA stale for that whole window. The heartbeat still fires independently so HA (and any late
-  // subscriber) gets a periodic freshness confirmation even when nothing has changed.
+  // Publish immediately on a real change (sTopic isn't retained); heartbeat is a periodic backstop.
   if (client.connected() && hasValidRead && (stateChanged() || heartbeatDue)) {
     publishState();
   }
@@ -945,10 +739,7 @@ void loop() {
   if (heartbeatDue) {
     lastPublish = nowMs;
 
-    // tsBoottime may still be a small pre-sync placeholder if NTP hadn't answered yet by the
-    // end of setup()'s bounded wait (likely, since that wait runs before connect() confirms
-    // WiFi is even up) - self-correct the first time the clock looks like a real epoch value
-    // (year 2020+), deriving boot time from millis() instead of trusting that early capture.
+    // Self-corrects tsBoottime the first time the clock looks real, in case NTP hadn't synced at boot.
     time(&now);
     if (tsBoottime.toInt() < 1600000000L && now >= 1600000000) {
       tsBoottime = String((unsigned long)now - (nowMs / 1000));
