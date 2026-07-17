@@ -21,13 +21,13 @@
 #define setLightPin D8  // GPIO 15
 
 //Constants
-const char *wifi_ssid                    = "JAM";          // WiFi SSID
-const char *wifi_pwd                     = "REDACTED_WIFI_PASSWORD";          // WiFi Password 
+const char *wifi_ssid                    = "your_wifi_ssid";          // WiFi SSID
+const char *wifi_pwd                     = "your_wifi_password";          // WiFi Password
 const char *wifi_hostname                = "SPA";
-const char* mqtt_server                  = "mqtt.h.snutt.net";           // MQTT Boker IP, your home MQTT server eg Mosquitto on RPi, or some public MQTT
+const char* mqtt_server                  = "your.mqtt.broker";           // MQTT Boker IP, your home MQTT server eg Mosquitto on RPi, or some public MQTT
 const int mqtt_port                      = 1883;        // MQTT Broker PORT, default is 1883 but can be anything.
-const char *mqtt_user                    = "sensors";          // MQTT Broker User Name
-const char *mqtt_pwd                     = "REDACTED_PASSWORD";          // MQTT Broker Password 
+const char *mqtt_user                    = "your_mqtt_user";          // MQTT Broker User Name
+const char *mqtt_pwd                     = "your_mqtt_password";          // MQTT Broker Password
 String clientId                          = "SPA : " + String(ESP.getChipId(), HEX);
 
 //Globals 
