@@ -37,7 +37,7 @@ const String deviceName = "bubbelkopp";
 // Shared HA device metadata - must stay identical to SDM-Universal-Env's bubbelkopp fields.
 const char* DEVICE_MANUFACTURER = "StarkJohan";
 const char* DEVICE_MODEL = "HA Bridge";
-const char* DEVICE_SW_VERSION = "0.2b";
+const char* DEVICE_SW_VERSION = "0.3";
 const char* DEVICE_HW_VERSION = "0.1a";
 const char* DEVICE_CONFIG_URL = "https://snutt.net/";
 
