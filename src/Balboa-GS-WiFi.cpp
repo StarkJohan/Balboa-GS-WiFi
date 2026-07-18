@@ -4,7 +4,7 @@
 #include <MQTT.h>
 #include <ArduinoJson.h>
 #include <debounce.h>                   // (lib/kimballa-button-debounce)
-#include <FastLED.h>                    // RGB status LED, same library as the scmr test sketch
+#include <FastLED.h>                    // RGB status LED
 #include "Balboa_GS_Interface.h"        // https://github.com/MagnusPer/Balboa-GS510SZ
 #include "secrets.h"                    // gitignored - copy secrets.h.example and fill in real values
 
@@ -14,7 +14,7 @@
 // are the only mechanism that actually works.
 
 //////////////////////////////////////////////////////////////////////////////
-// CONFIGURATION - everything you're likely to want to tweak lives below.
+// CONFIGURATION 
 //////////////////////////////////////////////////////////////////////////////
 
 // WiFi
@@ -36,7 +36,7 @@ const String deviceName = "bubbelkopp";
 
 // Shared HA device metadata - must stay identical to SDM-Universal-Env's bubbelkopp fields.
 const char* DEVICE_MANUFACTURER = "StarkJohan";
-const char* DEVICE_MODEL = "SDM-HA bridge";
+const char* DEVICE_MODEL = "HA Bridge";
 const char* DEVICE_SW_VERSION = "0.2b";
 const char* DEVICE_HW_VERSION = "0.1a";
 const char* DEVICE_CONFIG_URL = "https://snutt.net/";
@@ -233,21 +233,11 @@ struct StatusDebounce {
 };
 StatusDebounce debounced;
 
-// Last-published snapshot, for detecting a real change worth publishing immediately (see stateChanged()).
-struct PublishedSnapshot {
-  int waterTemp = -1;
-  int setTemp = -1;
-  String display = "";
-  bool heater = false;
-  bool pump1 = false;
-  bool light = false;
-  bool unknownFlag = false;
-  String rawFrame = "";
-  String physicalButton = "";
-  uint8_t ledR = 0, ledG = 0, ledB = 0;
-  bool hasPublishedOnce = false;
-};
-PublishedSnapshot lastPub;
+// Last-published state JSON, for detecting a real change worth publishing immediately (see
+// publishStateIfNeeded()) - a plain string compare, rather than a hand-maintained field-by-field
+// snapshot, so the field list only has to exist in one place (publishStateIfNeeded() itself).
+String lastPublishedState = "";
+bool hasPublishedStateOnce = false;
 
 struct ConnectivityState {
   unsigned long offlineSince = 0; // 0 while WiFi+MQTT are both up
@@ -313,7 +303,11 @@ void publishAttributes() {
 }
 
 // One JSON blob with every read field; each entity's value_template pulls its own key back out.
-void publishState() {
+// Builds it once and only actually publishes (and updates the change-detection snapshot) if the
+// serialized result differs from what was last published, or heartbeatDue forces it regardless -
+// Display/Heater/raw frame are tracked raw/undebounced on purpose (real-time diagnostics, at the
+// cost of more publishes when they're noisy).
+void publishStateIfNeeded(bool heartbeatDue) {
   StaticJsonDocument<384> state;
   state["_water_temp"] = temp.currentWaterTemp;
   state["_set_temp"] = temp.currentSetTemp;
@@ -330,39 +324,12 @@ void publishState() {
 
   String output;
   serializeJson(state, output);
+
+  if (!heartbeatDue && hasPublishedStateOnce && output == lastPublishedState) return;
+
   client.publish(sTopic.c_str(), output, false, 1);
-
-  lastPub.waterTemp = temp.currentWaterTemp;
-  lastPub.setTemp = temp.currentSetTemp;
-  lastPub.display = Balboa.LCD_display;
-  lastPub.heater = Balboa.displayHeater;
-  lastPub.pump1 = debounced.pump1.confirmed;
-  lastPub.light = debounced.light.confirmed;
-  lastPub.unknownFlag = debounced.unknownFlag.confirmed;
-  lastPub.rawFrame = currentRawFrame;
-  lastPub.physicalButton = lastPhysicalButton;
-  lastPub.ledR = statusLed[0].r;
-  lastPub.ledG = statusLed[0].g;
-  lastPub.ledB = statusLed[0].b;
-  lastPub.hasPublishedOnce = true;
-}
-
-// True if any field differs from what was last published (see loop()). Display/Heater/raw frame
-// are tracked raw/undebounced on purpose - real-time diagnostics, at the cost of more publishes.
-bool stateChanged() {
-  if (!lastPub.hasPublishedOnce) return true;
-  return temp.currentWaterTemp != lastPub.waterTemp
-      || temp.currentSetTemp != lastPub.setTemp
-      || Balboa.LCD_display != lastPub.display
-      || Balboa.displayHeater != lastPub.heater
-      || debounced.pump1.confirmed != lastPub.pump1
-      || debounced.light.confirmed != lastPub.light
-      || debounced.unknownFlag.confirmed != lastPub.unknownFlag
-      || currentRawFrame != lastPub.rawFrame
-      || lastPhysicalButton != lastPub.physicalButton
-      || statusLed[0].r != lastPub.ledR
-      || statusLed[0].g != lastPub.ledG
-      || statusLed[0].b != lastPub.ledB;
+  lastPublishedState = output;
+  hasPublishedStateOnce = true;
 }
 
 // entName also doubles as the state-blob JSON key. customExpr overrides the default
@@ -862,12 +829,12 @@ void loop() {
 
   unsigned long nowMs = millis();
   // LCD_display stays "" until the first real decode - used to avoid publishing default-false fields.
-  bool hasValidRead = (Balboa.LCD_display.length() > 0);
+  bool hasValidRead = (frame.length() > 0);
   bool heartbeatDue = (nowMs - lastPublish > STATE_PUBLISH_INTERVAL_MS);
 
   // Publish immediately on a real change (sTopic isn't retained); heartbeat is a periodic backstop.
-  if (client.connected() && hasValidRead && (stateChanged() || heartbeatDue)) {
-    publishState();
+  if (client.connected() && hasValidRead) {
+    publishStateIfNeeded(heartbeatDue);
   }
 
   if (heartbeatDue) {

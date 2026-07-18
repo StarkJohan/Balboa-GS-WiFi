@@ -116,6 +116,14 @@ Cross-referencing against <a href="https://github.com/kgstorm/Balboa-GS100-with-
 
 <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/doc/images/scope_data.png">
 
+### A note on bit 23 / the last clock pulse
+
+The full cycle is genuinely 24 bits (confirmed via oscilloscope: 3x 7-bit chunks + 1x 3-bit chunk, ~33us/bit, ~1080us total, one clock pulse per bit, no hidden framing). However, this firmware's ESP8266 interrupt-driven capture (`clockPinInterrupt()`/`decodeDisplayData()` in `lib/Balboa_GS_Interface`) only reliably reads the first 23 of those 24 bits - it detaches its interrupt one pulse early, before the last bit (chunk 4's 3rd bit) is captured. That last bit is exposed in the firmware as `displayBit23`/HA's `_unknown_flag`, and its value has never been reliable (it's always read as `false`, since the code was silently reading uninitialized memory rather than a real captured bit).
+
+An attempt was made to fix this (bump the capture to a true 24 bits) - it broke the display decode entirely (the interrupt-driven capture never once completed a cycle in a 100+ second live test) rather than just failing to read that one extra bit, and was reverted. The likely cause: at ~33us/bit, this is tight enough timing that ESP8266's WiFi-induced interrupt latency (SDK-internal critical sections can delay ISR entry by well over that) becomes marginal - <a href="https://github.com/kgstorm/Balboa-GS100-with-VL260-topside">kgstorm's own README</a> documents hitting the same class of problem on ESP8266 with this exact kind of interrupt-driven capture, and switched to an ESP32 to get reliable reads. This board is built around an ESP8266, so that option isn't available without a hardware redesign. `WiFi.setSleepMode(WIFI_NONE_SLEEP)` (one of the standard ESP8266 WiFi-latency mitigations) is already applied and didn't help.
+
+Given the first 23 bits have been field-proven reliable for ~2 years, and bit 23's actual meaning was never confirmed to matter functionally, this has been left as-is rather than continuing to chase it live on production hardware.
+
 
 ## PCB basics
 
@@ -134,6 +142,10 @@ To accommodate for the difference in pinout between Z and SZ controllers the PCB
 ## Software
 ### Version 0.3 
 - Basic functionality to read and set status using a **Balboa_GS** developed library and post a selection of buttons, sensors and diagnostics to the Home Assistant MQTT discovery topic.
+
+The device auto-registers in Home Assistant via MQTT discovery - no manual entity configuration needed. Example of the resulting device page (controls, sensors, and diagnostics):
+
+<img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/doc/images/HA_MQTT_discovery_device.png" width="700">
 
 ## References
 - https://github.com/MagnusPer/Balboa-GS510SZ

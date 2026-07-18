@@ -39,3 +39,9 @@ Unlike heating mode, filter cycle programming is described as a normal, always-a
 ## Related protocol references
 
 - [kgstorm/Balboa-GS100-with-VL260-topside](https://github.com/kgstorm/Balboa-GS100-with-VL260-topside) - independently reverse-engineered the same clock/data protocol on a VL260 panel; their mode-switch button sequence (Cool, then Light) matches the official manual's "Temp, then Light" exactly.
+
+## Firmware TODO / open items
+
+- **Bit 23 / the 24th clock pulse** - parked, not actively being worked. See the "A note on bit 23 / the last clock pulse" section above in the main README for the full writeup: the true 24-bit protocol format is confirmed (oscilloscope), but the ESP8266 capture can't reliably read the last bit without stalling entirely, likely ESP8266 WiFi-induced ISR timing marginality (same class of issue kgstorm's own README documents hitting on ESP8266, which is why that project moved to ESP32). Two live attempts both required a rollback to the working 23-bit capture.
+- **SPA boot cycle handling** - the display reportedly shows `Pr`/`--` for roughly the first 2 minutes after the SPA itself is powered on (not the ESP8266 controller board - the actual spa unit). Not yet detected/represented distinctly in the firmware; right now that period would just look like ordinary corrupted-frame noise.
+- **Heater rapid-flash signal** (future idea) - the heater status bit has been observed flashing rapidly as a natural SPA state, most likely correlated with the heater starting after a set-temp increase, though the exact meaning hasn't been confirmed. Currently exposed raw/real-time (undebounced) specifically so this can be observed over time in HA history. Once its meaning is confirmed, consider a dedicated derived entity (e.g. "Heater igniting") instead of just the raw diagnostic bit.
