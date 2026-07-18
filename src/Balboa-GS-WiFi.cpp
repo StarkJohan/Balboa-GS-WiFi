@@ -42,15 +42,18 @@ const char* DEVICE_HW_VERSION = "0.1a";
 const char* DEVICE_CONFIG_URL = "https://snutt.net/";
 
 // Display/clock protocol pins - shared by every controller variant.
-const uint8_t PIN_CLOCK = D1; // GPIO 5
-const uint8_t PIN_READ  = D2; // GPIO 4
+// Raw GPIO numbers, not Wemos D1 mini Dx aliases - this is a custom ESP8266 board with its own
+// pinout, not a real D1 mini (platformio.ini's board=d1_mini is only there for toolchain/flash
+// matching, see the comment there).
+const uint8_t PIN_CLOCK = 5; // GPIO5
+const uint8_t PIN_READ  = 4; // GPIO4
 
 #if defined(CONTROLLER_Z)
   // Z suffix: 4 discrete button GPIO lines, pulsed HIGH to simulate a physical press.
-  const uint8_t PIN_LIGHT = D8; // GPIO 15 - also read passively, see checkPhysicalButtons()
-  const uint8_t PIN_UP    = D5; // GPIO 14
-  const uint8_t PIN_DOWN  = D6; // GPIO 12
-  const uint8_t PIN_PUMP  = D7; // GPIO 13
+  const uint8_t PIN_LIGHT = 15; // GPIO15 - also read passively, see checkPhysicalButtons()
+  const uint8_t PIN_UP    = 14; // GPIO14
+  const uint8_t PIN_DOWN  = 12; // GPIO12
+  const uint8_t PIN_PUMP  = 13; // GPIO13
 #elif defined(CONTROLLER_SZ)
   #error "SZ/D controller button-write not implemented yet - see README"
 #else
@@ -61,7 +64,7 @@ const uint8_t PIN_READ  = D2; // GPIO 4
 const unsigned long BUTTON_PULSE_MS = 100;
 
 // RGB status LED (WS2812B, addressable) - shows WiFi+MQTT connectivity (see updateStatusLed()).
-const uint8_t STATUS_LED_PIN = D4; // GPIO 2 - also LED_BUILTIN, now dedicated to this LED instead
+const uint8_t STATUS_LED_PIN = 2; // GPIO2 - also LED_BUILTIN, now dedicated to this LED instead
 const uint8_t NUM_STATUS_LEDS = 1;
 
 // OTA
