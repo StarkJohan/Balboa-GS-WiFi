@@ -42,6 +42,7 @@ class BalboaInterface {
 	//bool displayPump2;        					// Pump 2 running or not
 	bool displayLight;        						// Hot tube lights activated or not
 	static bool displayDataBufferOverflow;
+	static byte displayDataBuffer[totalDataBits];	// Raw captured bits of the most recent decoded frame
 	
 	// Write button data to control unit  
 	static bool writeDisplayData;            		// If something should be written to button data line  
@@ -65,8 +66,7 @@ class BalboaInterface {
 	String LCD_display_1;
 	String LCD_display_2;
 	//String LCD_display_3;
-	//String LCD_display_4;  
-	static byte displayDataBuffer[totalDataBits]; 	// Array of display data measurements 
+	//String LCD_display_4;
 	static unsigned long clockInterruptTime;
 	static int clockBitCounter;               		// Counter of pulses within a cycle
 	static byte dataIndex; 									

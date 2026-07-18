@@ -7,14 +7,14 @@
 
 
 ## What's this?
-This repo aims to provide a general **hardware solution** to add WiFi control to the Balbo GS line of SPA controllers using the 8-pin RJ45 connected displays.<br />
+This repo aims to provide a general **hardware and software solution** to add WiFi control to the Balbo GS line of SPA controllers using the 8-pin RJ45 connected displays.<br />
 The PCB is designed to be installed directly on the RJ45 port of the controller PCB. Remote install using a RJ45 cable is also possible if that is preferred.<br />
-The software will be heavily based on user contribution as the different controller displays have slightly different 7 segment displays and button functions.<br />
-Please note that the only hardware I personally have access to is the VL406U 4 button control panel and the GS500Z/GS501Z controller.
-The POC software framework is based on <a href="https://github.com/MagnusPer/Balboa-GS510SZ">this excellent repo by MagnusPer</a>. For more detailed information on the protocol please visit his repo.<br />
+The software support beyond the GS500Z/GS501Z will be heavily based on user contribution as the different controller displays have slightly different 7 segment displays and button functions.<br />
+Please note that the only hardware I personally have access to is the VL406U 4 button control panel and the GS500Z/GS501Z controller to fully confirm functionality.
+The initial POC software framework is based on <a href="https://github.com/MagnusPer/Balboa-GS510SZ">this excellent repo by MagnusPer</a>. For more detailed information on the protocol than I'm providing here, please visit his repo.<br />
 
 ### Current state and support
-The PCB is currently in a protoype stage. It is tested and confirmed to support the following controllers:
+The PCB is currently in a protoype stage but has been working well for me for roughly two years. It is tested and confirmed to support the following controllers:
 - GS500Z
 - GS501Z
 
@@ -24,7 +24,7 @@ The PCB should thus be compatible with the following control displays (Z suffix 
 The PCB has solder jumpers that can be set the pinout to be compatible with either the pinout of the panels above or the SZ suffix controllers using the following displays:
 - VL600S, VL700S, VL701S, VL702S
 
-It's very likely that the PCB can be used with the VL801D and VL802D control displays as well.
+It's very likely that the PCB can be used with the VL801D and VL802D control displays as well but that is yet to be tested and confirmed.
 
 ## Hardware
 ### Control display data and pin functions
@@ -88,10 +88,10 @@ It's very likely that the PCB can be used with the VL801D and VL802D control dis
 For more info on the SZ suffix controller pinout and data format, see the <a href="https://github.com/MagnusPer/Balboa-GS510SZ">MagnusPer</a> repo and for D suffix controllers the <a href="https://github.com/Shuraxxx/-Balboa-GS523DZ-with-panel-VL801D-DeluxeSerie--MQTT">Shuraxxx</a> repo.
 
 ### Button data
-The four buttons of the Z suffix displays are indicated by a short high pulse on the respective pins as noted in the table.
+The four buttons of the Z suffix displays each produce a short high pulse on the respective pins as noted in the table.
 
 ### Display data
-The display signal is made up of a clock  and a data line. The complete data set is made up of three 7 bit chunks and one 3 bit chunk.<br />
+The display signal is made up of a clock and a data line. The complete data set is made up of three 7 bit chunks and one 3 bit chunk.<br />
 The first chunk is mostly unused except for the fifth bit that indicates if the heater is active.<br />
 The second and third chunk represents the two digits of the seven segment display. 
 
@@ -102,12 +102,14 @@ If the display shows **36**: <br />
 36 is also the temperature set on the example oscilloscope image below where yellow is the clock and blue is the encoded data.<br /><br />
 
 
-| Chunk 1 - bit 0-6 | Chunk 2 - bit 7-13 | Chunk 3 - bit 14-20 | Chunk 4 - bit 21-23   | 
-| :---:             | :---:              | :---:               | :---:                 |                   
-| ?                 | LCD segment 1      | LCD Segment 2       |   21: Pump 1          |                    
-| ?                 |                    |                     |   22: Lights          |        
-| ?                 |                    |                     |   23: Pump 2, Blower? | 
-| ?                 |                    |                     |                       | 
+| Chunk 1 - bit 0-6 | Chunk 2 - bit 7-13 | Chunk 3 - bit 14-20 | Chunk 4 - bit 21-23        | 
+| :---:             | :---:              | :---:               | :---:                      |                   
+| ?                 | LCD segment 1      | LCD Segment 2       |   21: Pump 1               |                    
+| ?                 |                    |                     |   22: Lights               |        
+| ?                 |                    |                     |   23: always low/checksum? | 
+| ?                 |                    |                     |                            | 
+
+Cross-referencing against <a href="https://github.com/kgstorm/Balboa-GS100-with-VL260-topside">kgstorm's Balboa-GS100-with-VL260-topside</a> repo (same protocol, independently reverse-engineered): their equivalent bit is documented as always-low and used as a frame checksum, not a real status flag - so it's likely not "Pump 2, Blower" after all.
 | 4: Heater         |                    |                     |                       | 
 | ?                 |                    |                     |                       | 
 | ?                 |                    |                     |                       | 
@@ -117,7 +119,7 @@ If the display shows **36**: <br />
 
 ## PCB basics
 
-The PCB is connected in paralell to the existing controller display. A bidirectional levelshifter is connected to clock, data, and button lines to allow for reading the button inputs as well as sending pulses on any line. As all button data is indicated with a high pulse in some shape or form, both Z and SZ compatible displays should work with this setup. <br />
+The PCB is connected in paralell to the existing controller display. Bidirectional levelshifters are connected to clock, data, and button lines to allow for reading the button inputs as well as sending pulses on any line. As all button data is indicated with a high pulse in some shape or form, both Z and SZ compatible displays should work with this setup. <br />
 To accommodate for the difference in pinout between Z and SZ controllers the PCB has three solder jumpers. Their default state is not connected which means a selection needs to be made before the PCB will accept power from the RJ45 connector. <br />
 
 <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/doc/images/jumpers.png" width="200"> <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/doc/images/levelshifter.png" width="300">
@@ -130,8 +132,8 @@ To accommodate for the difference in pinout between Z and SZ controllers the PCB
 <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/doc/images/pcb_example.jpg" width="350"> <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/doc/images/pcb_installed.jpg" width="350">
 
 ## Software
-### Version 0.1 
-- Basic functionality to read and set status using a **Balboa_GS** developed library. Two examples are provided, first with simple read and set functionality and the second using MQTT for remote access.
+### Version 0.3 
+- Basic functionality to read and set status using a **Balboa_GS** developed library and post a selection of buttons, sensors and diagnostics to the Home Assistant MQTT discovery topic.
 
 ## References
 - https://github.com/MagnusPer/Balboa-GS510SZ
@@ -143,3 +145,4 @@ To accommodate for the difference in pinout between Z and SZ controllers the PCB
 - GL2000 Series https://github.com/netmindz/balboa_GL_ML_spa_control
 - BP Series https://github.com/ccutrer/balboa_worldwide_app
 - GS523SZ https://github.com/Shuraxxx/-Balboa-GS523SZ-with-panel-VL801D-DeluxeSerie--MQTT
+- GS100 with VL260 topside (ESPHome) https://github.com/kgstorm/Balboa-GS100-with-VL260-topside
