@@ -1,5 +1,9 @@
 #include <Arduino.h>
-#include <ESP8266WiFi.h>
+#if defined(ESP8266)
+  #include <ESP8266WiFi.h>
+#elif defined(ESP32)
+  #include <WiFi.h>
+#endif
 #include <ArduinoOTA.h>
 #include <MQTT.h>
 #include <ArduinoJson.h>
@@ -291,10 +295,12 @@ void publishConfig(String domain, String entName, StaticJsonDocument<900>& ent) 
 
 // Board identity/diagnostics, published as HA's json_attributes_topic on every entity.
 void publishAttributes() {
-  StaticJsonDocument<256> attrs;
+  StaticJsonDocument<320> attrs; // bumped from 256 to fit _rssi/_wifi_channel alongside the rest
   attrs["_clientname"] = cdName;
   attrs["_ip-adr"] = WiFi.localIP().toString();
   attrs["_boottime"] = tsBoottime.toInt();
+  attrs["_rssi"] = WiFi.RSSI();
+  attrs["_wifi_channel"] = WiFi.channel();
 
   time(&now);
   attrs["_updated"] = now;
@@ -462,7 +468,10 @@ void announceMqttConnected() {
   publishEntity(dev, "sensor", "_water_temp", "Water temperature", "temperature", "measurement", "\xC2\xB0" "C", 0);
   publishEntity(dev, "sensor", "_set_temp", "Set temperature", "temperature", "measurement", "\xC2\xB0" "C", 0);
   publishNumberEntity(dev, "_set_temp_target", "Set temperature target");
-  publishEntity(dev, "binary_sensor", "_heater", "Heater", "heat", "", "", -1, "'ON' if value_json._heater else 'OFF'");
+  // Plain sensor (not binary_sensor) so the state text is exactly "Heating"/"Off" - binary_sensor's
+  // "heat" device_class translates ON/OFF to "Hot"/"Normal" in the HA UI, which reads as a
+  // temperature warning rather than "the heater is running".
+  publishEntity(dev, "sensor", "_heater", "Heater", "", "", "", -1, "'Heating' if value_json._heater else 'Off'");
   publishEntity(dev, "binary_sensor", "_pump1", "Pump 1", "running", "", "", -1, "'ON' if value_json._pump1 else 'OFF'");
   publishEntity(dev, "sensor", "_display", "Display", "", "", "", -1, "", "diagnostic");
   publishEntity(dev, "binary_sensor", "_unknown_flag", "Unknown flag (bit23)", "", "", "", -1, "'ON' if value_json._unknown_flag else 'OFF'", "diagnostic");
@@ -474,8 +483,12 @@ void announceMqttConnected() {
   // Read-only mirror of Lights' real status, distinct unique_id from the light entity below.
   publishEntity(dev, "binary_sensor", "_light_diag", "Lights", "light", "", "", -1, "'ON' if value_json._light else 'OFF'", "diagnostic");
 
-  publishEntity(dev, "sensor", "_uptime", "Uptime", "duration", "measurement", "s", 0, "", "diagnostic", attrTopic);
-  publishEntity(dev, "sensor", "_boottime", "Boottime", "timestamp", "", "", -1, "value_json._boottime | timestamp_local", "diagnostic", attrTopic);
+  // Named "... Spa" since this HA device is shared with SDM-Universal-Env's bubbelkopp env - a
+  // plain "Uptime" would be indistinguishable from that board's own uptime entity on the device page.
+  publishEntity(dev, "sensor", "_uptime", "Uptime Spa", "duration", "measurement", "s", 0, "", "diagnostic", attrTopic);
+  publishEntity(dev, "sensor", "_boottime", "Boottime Spa", "timestamp", "", "", -1, "value_json._boottime | timestamp_local", "diagnostic", attrTopic);
+  publishEntity(dev, "sensor", "_rssi", "WiFi RSSI Spa", "signal_strength", "measurement", "dBm", 0, "", "diagnostic", attrTopic);
+  publishEntity(dev, "sensor", "_wifi_channel", "WiFi channel Spa", "", "measurement", "", 0, "", "diagnostic", attrTopic);
 
   publishButtonEntity(dev, "_temp_up", "Temp Up", CMD_TEMP_UP);
   publishButtonEntity(dev, "_temp_down", "Temp Down", CMD_TEMP_DOWN);
@@ -679,8 +692,13 @@ void setup() {
 
   WiFi.mode(WIFI_STA);
   WiFi.setAutoReconnect(true);
+#if defined(ESP8266)
   WiFi.hostname(WIFI_HOSTNAME);
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
+#elif defined(ESP32)
+  WiFi.setHostname(WIFI_HOSTNAME);
+  WiFi.setSleep(false);
+#endif
   WiFi.begin(ssid, password);
 
   client.begin(MQTT_BROKER_HOST, wclient);
@@ -691,7 +709,11 @@ void setup() {
 
   // Runs after connect() so WiFi is confirmed up first; best-effort/bounded, only feeds a
   // cosmetic boottime attribute (self-corrected later in loop() as a backstop).
+#if defined(ESP8266)
   configTime(NTP_TZ, NTP_SERVER);
+#elif defined(ESP32)
+  configTzTime(NTP_TZ, NTP_SERVER); // same TZ-string signature as ESP8266's configTime()
+#endif
   for (uint8_t ntpAttempts = 0; time(&now) < 1600000000L && ntpAttempts < NTP_MAX_ATTEMPTS; ntpAttempts++) {
     delay(1000);
   }

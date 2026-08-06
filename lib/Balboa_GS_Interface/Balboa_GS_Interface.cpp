@@ -174,7 +174,7 @@ void BalboaInterface::decodeDisplayData() {
             attachInterrupt(clockPin, clockPinInterrupt, CHANGE);
 }
 
- ICACHE_RAM_ATTR void BalboaInterface::clockPinInterrupt() {
+ IRAM_ATTR void BalboaInterface::clockPinInterrupt() {
 	  
         
      if (!displayDataBufferReady) {
@@ -308,13 +308,17 @@ String BalboaInterface::lookup_LCD_character(int LCD_character) {
        // case B1111011: return "g";  break;
           case B0010111: return "h";  break;
           case B0000100: return "i";  break;
-          case B0000001: return "j";  break;
+          // B0000001 (only the middle/"g" segment lit) is Balboa's own Priming Mode indicator,
+          // confirmed live: the real panel shows "--" here after a power-up reboot while Pump 1
+          // primes, not a letter - the generic alphanumeric font's "j" guess for this pattern
+          // doesn't apply to this protocol. See README's power-up sequence notes.
+          case B0000001: return "-";  break;
           case B1010111: return "k";  break;
           case B0000110: return "l";  break;
           case B0010100: return "m";  break;
           case B0010101: return "n";  break;
           case B0011101: return "o";  break;
-          case B1100111: return "p";  break;
+          case B1100111: return "P";  break;
 	 // case B1110011: return "q";  break;
           case B0000101: return "r";  break;
        // case B1011011: return "s";  break;

@@ -91,9 +91,8 @@ For more info on the SZ suffix controller pinout and data format, see the <a hre
 The four buttons of the Z suffix displays each produce a short high pulse on the respective pins as noted in the table.
 
 ### Display data
-The display signal is made up of a clock and a data line. The complete data set is made up of three 7 bit chunks and one 3 bit chunk.<br />
-The first chunk is mostly unused except for the fifth bit that indicates if the heater is active.<br />
-The second and third chunk represents the two digits of the seven segment display. 
+The display signal is made up of a clock and a data line. The complete data set is made up of three 7 bit chunks and one 3 bit chunk (24 bits total, see [bit 23 note](#a-note-on-bit-23--the-last-clock-pulse) below for why only 23 of those are actually read).<br />
+Chunk 2 and chunk 3 are the two digits of the seven segment display, each coded in BCD. Chunk 1 does *not* drive a third 7-segment digit - see the table below for what its bits actually do. Chunk 4 is 3 discrete status bits, not a digit at all.
 
 The second and third chunks are coded in BCD to represent a 7 segment LCD layout. The first bit is always 0. <br /><br />
 If the display shows **36**: <br />
@@ -101,18 +100,18 @@ If the display shows **36**: <br />
 6 = (0)1011111 = 0x5F  (Chunk 3) <br /><br />
 36 is also the temperature set on the example oscilloscope image below where yellow is the clock and blue is the encoded data.<br /><br />
 
+| Bit(s)  | Chunk | Meaning |
+| :---:   | :---: | :--- |
+| 0, 3, 5, 6 | 1 | Unconfirmed / not seen used during normal operation |
+| 4       | 1     | **Heater active** (normal 2-digit operation only) |
+| 1, 2    | 1     | During the [boot sequence](doc/controller-info.md#boot-sequence-confirmed-live-2026-08-06) only: these two bits double as a bare "1" digit (hundreds place) - the hardware only wires up the two segments needed for a "1" here, not a full 7-segment digit, since a spa temperature reading never needs a hundreds digit above 1. Mutually exclusive with the heater-flag role above; both live in the same 7-bit slot but are never meaningful at the same time. |
+| 7-13    | 2     | LCD segment 1 (first digit), 7-segment BCD - see worked example above |
+| 14-20   | 3     | LCD segment 2 (second digit), 7-segment BCD - see worked example above |
+| 21      | 4     | Pump 1 |
+| 22      | 4     | Lights |
+| 23      | 4     | Always low / likely a checksum, not a real status flag - see below. Also not reliably captured by this firmware, see [bit 23 note](#a-note-on-bit-23--the-last-clock-pulse) |
 
-| Chunk 1 - bit 0-6 | Chunk 2 - bit 7-13 | Chunk 3 - bit 14-20 | Chunk 4 - bit 21-23        | 
-| :---:             | :---:              | :---:               | :---:                      |                   
-| ?                 | LCD segment 1      | LCD Segment 2       |   21: Pump 1               |                    
-| ?                 |                    |                     |   22: Lights               |        
-| ?                 |                    |                     |   23: always low/checksum? | 
-| ?                 |                    |                     |                            | 
-
-Cross-referencing against <a href="https://github.com/kgstorm/Balboa-GS100-with-VL260-topside">kgstorm's Balboa-GS100-with-VL260-topside</a> repo (same protocol, independently reverse-engineered): their equivalent bit is documented as always-low and used as a frame checksum, not a real status flag - so it's likely not "Pump 2, Blower" after all.
-| 4: Heater         |                    |                     |                       | 
-| ?                 |                    |                     |                       | 
-| ?                 |                    |                     |                       | 
+Cross-referencing against <a href="https://github.com/kgstorm/Balboa-GS100-with-VL260-topside">kgstorm's Balboa-GS100-with-VL260-topside</a> repo (same protocol, independently reverse-engineered): their equivalent of bit 23 is documented as always-low and used as a frame checksum, not a real status flag - so it's likely not "Pump 2, Blower" as originally guessed.
 
 <img src="https://github.com/StarkJohan/Balboa-GS-WiFi/blob/main/doc/images/scope_data.png">
 
